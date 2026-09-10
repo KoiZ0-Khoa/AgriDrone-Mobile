@@ -18,6 +18,10 @@ export type Farm = {
   status: GeneralStatus; createdAt: string
 }
 export type Zone = { zoneId: string; farmId: string; code: string; name: string; areaHectares: number | null; boundary: Polygon | null; status: GeneralStatus; version: number; createdAt: string }
+export type FarmDetail = Farm & { version: number; updatedAt: string | null }
+export type ArchiveRequest = { expectedVersion: number; reason: string }
+export type UpdateZoneRequest = { name: string; areaHectares: number | null; boundary: Polygon | null; expectedVersion: number }
+export type UpdateZoneResponse = Omit<Zone, 'createdAt'> & { updatedAt: string }
 export type CreateFarm = { code: string; name: string; address: string | null; areaHectares: number | null; centerPoint: Point | null; boundary: null }
 export type CreateZone = { code: string; name: string; areaHectares: number | null; boundary: null }
 export type TenantUser = { id: string; fullName: string; email: string; role: 0 | 1 | 2; status: 0 | 1 | 2 }

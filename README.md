@@ -37,6 +37,14 @@ Với điện thoại thật, dừng BE đang chạy rồi dùng `dotnet run --p
 
 GET `/api/farms` hiện chỉ cho Owner/Tenant Admin. Mobile không suy diễn role `MEMBER` thành Manager hoặc Worker; BE quyết định quyền truy cập Farm/Zone. Danh sách Farm theo assignment cho Member chưa có API; thành viên vẫn đăng nhập được nhưng màn hình danh sách giải thích giới hạn này. Tài khoản System Admin sử dụng web.
 
+### Cập nhật và lưu trữ Farm/Zone
+
+- Chi tiết khu vực → Chỉnh sửa: cập nhật tên và diện tích, hỗ trợ số thập phân dùng dấu phẩy. Mã và polygon hiện có được giữ nguyên; chưa có trình chỉnh sửa ranh giới.
+- Chi tiết Farm/Zone → Lưu trữ: chỉ Owner thấy nút, nhập lý do 1–500 ký tự rồi xác nhận. Lịch sử được giữ lại. Thành công quay về danh sách Farm hoặc chi tiết Farm chứa Zone.
+- Dùng PUT `/api/farms/{farmId}/zones/{zoneId}`, PUT `/api/farms/{farmId}/zones/{zoneId}/archive`, PUT `/api/farms/{farmId}/archive` với `expectedVersion` đã xem.
+- Xung đột phiên bản yêu cầu tải bản mới và kiểm tra trước khi gửi lại; không tự thử lại thao tác ghi. Thông báo riêng khi còn nhiệm vụ bay, công việc hoặc khu vực phụ thuộc.
+- API chi tiết chưa trả quyền hiệu lực để ẩn nút sửa theo assignment. BE xác thực Owner/Manager đúng khu vực; app hiển thị lỗi 403 và chặn gửi lại trong form khi không có quyền.
+
 Các phần chưa triển khai: danh sách/điều hành Mission trên mobile, Plant Profile, AI review, lịch/nhiệm vụ thực địa, chụp ảnh, thu hoạch, push notification và đồng bộ offline. Màn hình Công việc giới thiệu trạng thái chưa khả dụng, không tạo dữ liệu giả hoặc giả lập đồng bộ. Phiên bản này cần mạng để đọc/ghi nghiệp vụ.
 
 ## Giao diện và luồng thao tác
