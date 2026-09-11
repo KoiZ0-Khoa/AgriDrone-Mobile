@@ -5,7 +5,7 @@ import ts from 'typescript'
 
 const compile = file => ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2023 } }).outputText
 const dataUrl = source => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`
-const clientUrl = dataUrl(compile('../src/api/client.ts').replace("import { Platform } from 'react-native';", "const Platform = { OS: 'android' };").replace('process.env.EXPO_PUBLIC_API_URL', "'http://test.local'"))
+const clientUrl = dataUrl(compile('../src/api/client.ts').replace("import Constants from 'expo-constants';", "const Constants = {}; const __DEV__ = true;").replace("import { Platform } from 'react-native';", "const Platform = { OS: 'android' };").replace('process.env.EXPO_PUBLIC_API_URL', "'http://test.local'"))
 const client = await import(clientUrl)
 const api = await import(dataUrl(compile('../src/api/farms.ts').replace("'./client'", JSON.stringify(clientUrl))))
 const errors = await import(dataUrl(compile('../src/farms/managementErrors.ts').replace("'../api/client'", JSON.stringify(clientUrl))))

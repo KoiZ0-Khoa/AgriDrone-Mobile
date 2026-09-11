@@ -11,6 +11,7 @@ type Auth = {
   login: (email: string, password: string) => Promise<void>
   selectTenant: (tenantId: string) => Promise<void>
   cancelSelection: () => void; logout: () => Promise<void>
+  updateProfile: (profile: { fullName: string; phone: string | null }) => Promise<void>
 }
 const AuthContext = createContext<Auth | null>(null)
 
@@ -76,7 +77,13 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }
     await acceptResponse(await request<LoginResponse>('/api/auth/select-tenant', { method: 'POST', body: { selectionToken: selection.selectionToken, tenantId } }))
   }
-  return <AuthContext value={{ session, selection, ready, login, selectTenant, cancelSelection: () => setSelection(null), logout }}>{children}</AuthContext>
+  async function updateProfile(profile: { fullName: string; phone: string | null }) {
+    if (!session) return
+    const next = { ...session, ...profile }
+    await sessionStorage.set(JSON.stringify(next))
+    setSession(next)
+  }
+  return <AuthContext value={{ session, selection, ready, login, selectTenant, cancelSelection: () => setSelection(null), logout, updateProfile }}>{children}</AuthContext>
 }
 
 export function useAuth() {

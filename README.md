@@ -12,7 +12,9 @@ Copy-Item .env.example .env
 npm start -- --go
 ```
 
-Sửa `EXPO_PUBLIC_API_URL` trong `.env` trước khi chạy:
+Khi BE và Expo chạy trên cùng máy, để `EXPO_PUBLIC_API_URL=` trống trong `.env`. Trong chế độ phát triển LAN, app tự lấy IPv4 nội bộ của máy Expo và gọi BE ở cổng 5080. Khi đổi địa điểm/Wi-Fi, kết nối điện thoại và laptop vào cùng mạng, dừng Expo rồi chạy `npm.cmd start -- --go --lan --clear` và quét QR mới. Không cần sửa IP trong `.env`.
+
+Nếu BE ở máy khác, dùng Expo tunnel hoặc chạy bản cài độc lập, đặt `EXPO_PUBLIC_API_URL` rõ ràng:
 
 | Thiết bị | API URL local |
 | --- | --- |
@@ -20,7 +22,9 @@ Sửa `EXPO_PUBLIC_API_URL` trong `.env` trước khi chạy:
 | Điện thoại thật cùng Wi-Fi | `http://<IP-LAN-máy-chạy-BE>:5080` |
 | iOS Simulator / web trên máy chạy BE | `http://localhost:5080` |
 
-Với điện thoại thật, dừng BE đang chạy rồi dùng `dotnet run --project backend/src/AgriDrone.Api --launch-profile AgriDrone.Mobile` từ repo BE. Profile này lắng nghe HTTP tại `0.0.0.0:5080` để điện thoại cùng mạng truy cập được. Profile web mặc định chỉ chạy localhost và có chuyển hướng HTTPS nên không dùng để test điện thoại. Mở `http://<IP-LAN-máy-chạy-BE>:5080/health/live` trên điện thoại để kiểm tra. `localhost` trên điện thoại là chính điện thoại. Khi đổi Wi-Fi, kiểm tra lại IP bằng `ipconfig`, sửa `.env` và khởi động lại Metro bằng `npm.cmd start -- --go --clear`.
+Chế độ tự lấy IP chỉ áp dụng cho Expo chạy qua LAN ở môi trường phát triển; không giữ nguyên IP vật lý khi đổi mạng. Expo `--tunnel` chỉ chuyển tiếp máy chủ Expo, không chuyển tiếp BE cổng 5080. Muốn dùng khi điện thoại và laptop khác mạng, cần BE có địa chỉ truy cập ổn định (hosting HTTPS hoặc VPN riêng). Wi-Fi công cộng có thể chặn kết nối giữa thiết bị; khi đó dùng chung hotspot hoặc mạng riêng.
+
+Với điện thoại thật, dừng BE đang chạy rồi dùng `dotnet run --project backend/src/AgriDrone.Api --launch-profile AgriDrone.Mobile` từ repo BE. Profile này lắng nghe HTTP tại `0.0.0.0:5080` để điện thoại cùng mạng truy cập được. Profile web mặc định chỉ chạy localhost và có chuyển hướng HTTPS nên không dùng để test điện thoại. Mở `http://<IP-LAN-máy-chạy-BE>:5080/health/live` trên điện thoại để kiểm tra. `localhost` trên điện thoại là chính điện thoại. Nếu đã đặt URL thủ công trong `.env`, URL đó được ưu tiên và cần cập nhật khi đổi mạng; để trống để dùng chế độ tự lấy IP từ Expo LAN.
 
 `npm run web` mở bản xem thử tại cổng 5173, khớp CORS hiện có của BE. Dừng FE web trước khi dùng cùng cổng. Bản web dùng sessionStorage; Android/iOS dùng SecureStore. Không đặt mật khẩu, API secret hoặc thông tin database vào biến `EXPO_PUBLIC_*`.
 
@@ -48,6 +52,19 @@ GET `/api/farms` hiện chỉ cho Owner/Tenant Admin. Mobile không suy diễn r
 Các phần chưa triển khai: danh sách/điều hành Mission trên mobile, Plant Profile, AI review, lịch/nhiệm vụ thực địa, chụp ảnh, thu hoạch, push notification và đồng bộ offline. Màn hình Công việc giới thiệu trạng thái chưa khả dụng, không tạo dữ liệu giả hoặc giả lập đồng bộ. Phiên bản này cần mạng để đọc/ghi nghiệp vụ.
 
 ## Giao diện và luồng thao tác
+
+### Tài khoản, thành viên và sửa nông trại
+
+- Chi tiết Farm → **Chỉnh sửa nông trại**: Owner/Tenant Admin sửa tên, địa chỉ, diện tích và tọa độ tâm. Giữ nguyên mã/polygon, gửi `expectedVersion`; xung đột yêu cầu tải lại trước khi sửa tiếp.
+- Tài khoản → **Hồ sơ và mật khẩu**: sửa họ tên/số điện thoại, đổi mật khẩu; đổi mật khẩu thành công sẽ đăng xuất để đăng nhập lại.
+- Tài khoản → **Thành viên đơn vị**: Owner/Tenant Admin xem danh sách phân trang. Owner mời Tenant Admin, đổi vai trò, kích hoạt/ngừng quyền truy cập, chuyển quyền sở hữu và đăng nhập lại sau khi chuyển.
+- Đăng nhập → **Có lời mời?**: nhập mã trong liên kết email để chấp nhận lời mời. Người chưa có tài khoản điền thêm thông tin tài khoản. Liên kết email hiện mở web theo cấu hình BE; app hỗ trợ nhập mã, chưa tự chuyển liên kết web thành màn hình native.
+
+API danh sách thành viên chưa trả trạng thái membership; app không suy đoán từ trạng thái người dùng, mà cung cấp hai thao tác kích hoạt/ngừng riêng cho Owner. BE kiểm tra quyền và điều kiện nghiệp vụ.
+
+Lời mời cần outbox/RabbitMQ và SMTP của BE hoạt động; tạo lời mời thành công chưa xác nhận email đã được giao. Quản trị hệ thống (tenant, người dùng và membership toàn hệ thống) dành cho System Admin trên AgriDrone-FE.
+
+Drone/Mission chưa được tích hợp thêm vì BE thiếu danh sách toàn bộ drone, danh sách mission và danh sách bản đồ đã xác nhận phục vụ chọn dữ liệu. Đợt tích hợp này không sửa BE. Tests `tests/management.test.mjs` kiểm tra payload/đường dẫn HTTP giả lập và logic form; chưa thay thế kiểm thử trên điện thoại với BE và email thật.
 
 Luồng chính: **Trang chủ → Xem bản đồ → chọn nông trại → Xem chi tiết → khu vực/phân công**. Tab Nông trại giữ tìm kiếm và bộ lọc khi chuyển Danh sách/Bản đồ. Nút + mở form tạo nông trại cho Owner/Tenant Admin.
 

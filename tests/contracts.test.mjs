@@ -6,8 +6,27 @@ import ts from 'typescript'
 // Execute the actual TypeScript modules; only the native platform and HTTP transport are replaced.
 const compile = (file) => ts.transpileModule(readFileSync(new URL(file, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2023 } }).outputText
 const dataUrl = (source) => `data:text/javascript;base64,${Buffer.from(source).toString('base64')}`
-const clientUrl = dataUrl(compile('../src/api/client.ts').replace("import { Platform } from 'react-native';", "const Platform = { OS: 'android' };").replace('process.env.EXPO_PUBLIC_API_URL', "'http://test.local'"))
+const clientUrl = dataUrl(compile('../src/api/client.ts').replace("import Constants from 'expo-constants';", "const Constants = {}; const __DEV__ = true;").replace("import { Platform } from 'react-native';", "const Platform = { OS: 'android' };").replace('process.env.EXPO_PUBLIC_API_URL', "'http://test.local'"))
 const client = await import(clientUrl)
+
+test('API follows the Expo LAN host after moving networks, using the backend port', () => {
+  assert.equal(client.resolveApiUrl('', '192.168.137.1:8081', 'android', true), 'http://192.168.137.1:5080')
+  assert.equal(client.resolveApiUrl(undefined, '10.87.22.112:8082', 'ios', true), 'http://10.87.22.112:5080')
+  assert.equal(client.resolveApiUrl(' ', 'exp://172.20.10.2:8081', 'android', true), 'http://172.20.10.2:5080')
+})
+
+test('explicit backend URL wins and release builds never infer a development host', () => {
+  assert.equal(client.resolveApiUrl(' https://api.example.test/ ', '192.168.1.4:8081', 'android', true), 'https://api.example.test')
+  assert.equal(client.resolveApiUrl('', '192.168.1.4:8081', 'android', false), 'http://10.0.2.2:5080')
+})
+
+test('Expo tunnel, invalid host, and missing host are not treated as the backend', () => {
+  for (const host of ['demo.exp.direct:80', 'https://updates.example.test', 'invalid host', undefined]) {
+    assert.equal(client.resolveApiUrl('', host, 'android', true), 'http://10.0.2.2:5080')
+  }
+  assert.equal(client.resolveApiUrl('', 'localhost:8081', 'android', true), 'http://10.0.2.2:5080')
+  assert.equal(client.resolveApiUrl('', '127.0.0.1:8081', 'ios', true), 'http://localhost:5080')
+})
 const api = await import(dataUrl(compile('../src/api/farms.ts').replace("'./client'", JSON.stringify(clientUrl))))
 const session = await import(dataUrl(compile('../src/auth/session.ts')))
 const { optionalNumber } = await import(dataUrl(compile('../src/farms/validation.ts')))

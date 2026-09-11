@@ -33,12 +33,15 @@ function Navigation() {
     </Stack.Protected>
     <Stack.Protected guard={Boolean(session)}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="profile" options={{ title: 'Hồ sơ cá nhân' }} />
+      <Stack.Screen name="team" options={{ title: 'Thành viên đơn vị' }} />
       <Stack.Screen name="farm/[farmId]" options={{ title: 'Nông trại' }} />
       <Stack.Screen name="farm/create" options={{ title: 'Thêm nông trại', presentation: 'modal' }} />
       <Stack.Screen name="farm/[farmId]/create-zone" options={{ title: 'Thêm khu vực', presentation: 'modal' }} />
       <Stack.Screen name="farm/[farmId]/assignment" options={{ title: 'Phân công quản lý' }} />
       <Stack.Screen name="farm/[farmId]/zone/[zoneId]" options={{ title: 'Khu vực canh tác' }} />
     </Stack.Protected>
+    <Stack.Screen name="invitation" options={{ title: 'Tham gia đơn vị' }} />
   </Stack>
 }
 export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) { return <Screen><DataError error={error} retry={retry} /></Screen> }

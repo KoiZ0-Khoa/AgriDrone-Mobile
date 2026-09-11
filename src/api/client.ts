@@ -1,6 +1,20 @@
 import { Platform } from 'react-native'
+import Constants from 'expo-constants'
 
-export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? (Platform.OS === 'android' ? 'http://10.0.2.2:5080' : 'http://localhost:5080')).replace(/\/$/, '')
+export function resolveApiUrl(configured: string | undefined, hostUri: string | undefined, platform: string, development: boolean) {
+  if (configured?.trim()) return configured.trim().replace(/\/+$/, '')
+  // Expo and BE run on the same computer. Only infer a local development host,
+  // never treat an Expo tunnel or an update server as the backend.
+  if (development && hostUri) {
+    try {
+      const host = new URL(hostUri.includes('://') ? hostUri : `http://${hostUri}`).hostname
+      if (/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host) && /^\d+\.\d+\.\d+\.\d+$/.test(host)) return `http://${host}:5080`
+      if (host === 'localhost' || host === '127.0.0.1') return platform === 'android' ? 'http://10.0.2.2:5080' : 'http://localhost:5080'
+    } catch { /* No usable LAN host; use the local simulator default below. */ }
+  }
+  return platform === 'android' ? 'http://10.0.2.2:5080' : 'http://localhost:5080'
+}
+export const API_URL = resolveApiUrl(process.env.EXPO_PUBLIC_API_URL, Constants.expoConfig?.hostUri, Platform.OS, __DEV__)
 let unauthorizedHandler: ((token: string) => void) | undefined
 export function onUnauthorized(handler?: (token: string) => void) { unauthorizedHandler = handler }
 
