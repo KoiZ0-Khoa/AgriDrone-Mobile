@@ -36,10 +36,10 @@ Với điện thoại thật, dừng BE đang chạy rồi dùng `dotnet run --p
 - Owner/Tenant Admin: xem Farm có phân trang/kéo tải lại, tạo Farm, xem chi tiết Farm và danh sách/chi tiết Zone, tạo Zone.
 - Nông trại: chuyển Danh sách/Bản đồ, tìm tên/mã/địa chỉ và lọc trạng thái trong các trang đã tải. Nút tải thêm vẫn xuất hiện ở cả hai chế độ.
 - Bản đồ native: điểm đánh dấu từ `centerPoint` GeoJSON hợp lệ, chọn điểm hoặc dùng nút trước/sau để xem nông trại và mở chi tiết. Thiếu tọa độ được thông báo; không tự tạo vị trí.
-- Phân công Tenant Admin đang hoạt động làm `MANAGER / ALL_ZONES`: tìm theo tên/email, đọc assignment, tạo/cập nhật với `ExpectedVersion`, xử lý xung đột.
+- Phân công Member làm `MANAGER / WORKER`, phạm vi `ALL_ZONES / SELECTED_ZONES`: tìm theo tên/email, chọn Zone đang hoạt động, đọc/tạo/cập nhật assignment với `expectedVersion`. Chỉ Owner được phân công Tenant Admin và chỉ vai trò Manager.
 - Native stack và native bottom tabs; bàn phím, safe area, trạng thái tải/lỗi/trống và danh sách dùng FlashList.
 
-GET `/api/farms` hiện chỉ cho Owner/Tenant Admin. Mobile không suy diễn role `MEMBER` thành Manager hoặc Worker; BE quyết định quyền truy cập Farm/Zone. Danh sách Farm theo assignment cho Member chưa có API; thành viên vẫn đăng nhập được nhưng màn hình danh sách giải thích giới hạn này. Tài khoản System Admin sử dụng web.
+GET `/api/farms` chỉ cho Owner/Tenant Admin. Với Member, tab Nông trại dùng `GET /api/users/me/farm-assignments`: phân trang, lọc vai trò và hiện các Zone được phép làm việc. Tài khoản → Nông trại được giao cũng mở danh sách này cho mọi vai trò trong tenant. BE quyết định quyền truy cập Farm/Zone; không suy diễn role `MEMBER` thành Manager hoặc Worker. Tài khoản System Admin sử dụng web.
 
 ### Cập nhật và lưu trữ Farm/Zone
 
@@ -55,12 +55,18 @@ Các phần chưa triển khai: danh sách/điều hành Mission trên mobile, P
 
 ### Tài khoản, thành viên và sửa nông trại
 
+App kiểm tra mã bằng `POST /api/auth/invitations/preview` trước khi nhận lời mời: email đã có tài khoản chỉ cần xác nhận tham gia; email chưa có tài khoản mới hiện form họ tên/mật khẩu và xác nhận mật khẩu. Lời mời lỗi không được chuyển sang form đăng ký. Sau khi chấp nhận, đăng nhập bằng tài khoản của email được mời để chọn đơn vị; API nhận lời mời không tự cấp phiên đăng nhập.
+
 - Chi tiết Farm → **Chỉnh sửa nông trại**: Owner/Tenant Admin sửa tên, địa chỉ, diện tích và tọa độ tâm. Giữ nguyên mã/polygon, gửi `expectedVersion`; xung đột yêu cầu tải lại trước khi sửa tiếp.
 - Tài khoản → **Hồ sơ và mật khẩu**: sửa họ tên/số điện thoại, đổi mật khẩu; đổi mật khẩu thành công sẽ đăng xuất để đăng nhập lại.
-- Tài khoản → **Thành viên đơn vị**: Owner/Tenant Admin xem danh sách phân trang. Owner mời Tenant Admin, đổi vai trò, kích hoạt/ngừng quyền truy cập, chuyển quyền sở hữu và đăng nhập lại sau khi chuyển.
+- Tài khoản → **Thành viên đơn vị**: Owner/Tenant Admin xem danh sách phân trang và mời Member. Owner mời Tenant Admin, đổi vai trò, kích hoạt/ngừng quyền truy cập, chuyển quyền sở hữu và đăng nhập lại sau khi chuyển.
+- Chi tiết Farm → **Thành viên nông trại**: xem danh sách, lọc Manager/Worker và trạng thái phân công; thu hồi có xác nhận và lý do tùy chọn. Tenant Admin thu hồi được phân công của Member, còn mục tiêu Tenant Admin/Owner cần Owner. Gửi `expectedVersion`; xung đột yêu cầu tải lại, không tự thử lại. Thu hồi không xóa tài khoản hoặc membership đơn vị.
+- Chi tiết Farm → **Phân công thành viên**: giao/cập nhật Farm và Zone sau khi người nhận đã chấp nhận lời mời; có thể cấp lại phân công đã thu hồi.
 - Đăng nhập → **Có lời mời?**: nhập mã trong liên kết email để chấp nhận lời mời. Người chưa có tài khoản điền thêm thông tin tài khoản. Liên kết email hiện mở web theo cấu hình BE; app hỗ trợ nhập mã, chưa tự chuyển liên kết web thành màn hình native.
 
 API danh sách thành viên chưa trả trạng thái membership; app không suy đoán từ trạng thái người dùng, mà cung cấp hai thao tác kích hoạt/ngừng riêng cho Owner. BE kiểm tra quyền và điều kiện nghiệp vụ.
+
+Review: mời Member → chấp nhận bằng tài khoản cũ hoặc tạo tài khoản theo kết quả preview → phân công Farm/Zone → đăng nhập người nhận → Nông trại được giao → thu hồi bằng tài khoản quản trị → người nhận kéo tải lại danh sách. Những thay đổi do tài khoản khác thực hiện không tự cập nhật theo thời gian thực.
 
 Lời mời cần outbox/RabbitMQ và SMTP của BE hoạt động; tạo lời mời thành công chưa xác nhận email đã được giao. Quản trị hệ thống (tenant, người dùng và membership toàn hệ thống) dành cho System Admin trên AgriDrone-FE.
 

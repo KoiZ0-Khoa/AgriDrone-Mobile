@@ -75,16 +75,16 @@ test('optional numeric inputs accept Vietnamese decimals and reject invalid coor
   for (const value of ['-1', 'NaN', 'Infinity', '0x10', '1,2,3']) assert.throws(() => optionalNumber(value, 'Diện tích', 0))
   assert.throws(() => optionalNumber('91', 'Vĩ độ', -90, 90))
 })
-test('tenant-admin picker fetches every page and filters inactive/other roles', async () => {
+test('assignment picker fetches every page and excludes inactive users and Owner', async () => {
   const urls = []
   globalThis.fetch = async (url, options) => {
     urls.push(url)
     assert.equal(options.headers.Authorization, 'Bearer token')
     return Response.json(urls.length === 1
       ? { items: [{ id: 'owner', role: 0, status: 0 }, { id: 'locked', role: 1, status: 2 }], hasNextPage: true }
-      : { items: [{ id: 'admin', role: 1, status: 0 }, { id: 'inactive', role: 1, status: 1 }], hasNextPage: false })
+      : { items: [{ id: 'admin', role: 1, status: 0 }, { id: 'member', role: 2, status: 0 }, { id: 'inactive', role: 1, status: 1 }], hasNextPage: false })
   }
-  assert.deepEqual((await api.getAdmins('token')).map(item => item.id), ['admin'])
+  assert.deepEqual((await api.getAssignableUsers('token', 'OWNER')).map(item => item.id), ['admin', 'member'])
   assert.deepEqual(urls, ['http://test.local/tenants/current/users?pageNumber=1&pageSize=100', 'http://test.local/tenants/current/users?pageNumber=2&pageSize=100'])
 })
 test('only missing assignment is converted to null', async () => {
@@ -95,20 +95,20 @@ test('only missing assignment is converted to null', async () => {
     await assert.rejects(() => api.getAssignment('token', 'farm', 'user'), error => error.code === code && error.status === status)
   }
 })
-test('assignment create/update sends fixed scope and current concurrency version', async () => {
+test('assignment create/update sends selected scope and reviewed concurrency version', async () => {
   for (const version of [null, 4]) {
     globalThis.fetch = async (url, options) => {
       assert.equal(url, 'http://test.local/api/farms/farm/members/user/assignment')
       assert.equal(options.method, 'PUT')
-      assert.deepEqual(JSON.parse(options.body), { role: 'MANAGER', accessScope: 'ALL_ZONES', zoneIds: [], expectedVersion: version, reason: 'Lý do' })
+      assert.deepEqual(JSON.parse(options.body), { role: 'WORKER', accessScope: 'SELECTED_ZONES', zoneIds: ['zone'], expectedVersion: version, reason: 'Lý do' })
       return Response.json({ version: (version ?? 0) + 1 })
     }
-    assert.equal((await api.assignManager('token', 'farm', 'user', version, ' Lý do ')).version, (version ?? 0) + 1)
+    assert.equal((await api.assignFarmMember('token', 'farm', 'user', { role: 'WORKER', accessScope: 'SELECTED_ZONES', zoneIds: ['zone'], expectedVersion: version, reason: 'Lý do' })).version, (version ?? 0) + 1)
   }
 })
 test('assignment conflicts preserve the code needed to require reload', async () => {
   globalThis.fetch = async () => Response.json({ errorCode: 'FarmMembership.ConcurrentUpdate' }, { status: 409 })
-  await assert.rejects(() => api.assignManager('token', 'farm', 'user', 1, ''), error => error.status === 409 && error.code === 'FarmMembership.ConcurrentUpdate')
+  await assert.rejects(() => api.assignFarmMember('token', 'farm', 'user', { role: 'MANAGER', accessScope: 'ALL_ZONES', zoneIds: [], expectedVersion: 1, reason: null }), error => error.status === 409 && error.code === 'FarmMembership.ConcurrentUpdate')
 })
 test('401 expires authenticated sessions but not failed anonymous logins', async () => {
   let expired = 0

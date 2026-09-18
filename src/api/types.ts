@@ -26,3 +26,4 @@ export type CreateFarm = { code: string; name: string; address: string | null; a
 export type CreateZone = { code: string; name: string; areaHectares: number | null; boundary: null }
 export type TenantUser = { id: string; fullName: string; email: string; role: 0 | 1 | 2; status: 0 | 1 | 2 }
 export type Assignment = { farmMembershipId: string; farmId: string; userId: string; role: 'MANAGER' | 'WORKER'; accessScope: 'ALL_ZONES' | 'SELECTED_ZONES'; zoneIds: string[]; status: 'ACTIVE' | 'INACTIVE'; version: number }
+export type AssignFarmMemberRequest = Pick<Assignment, 'role' | 'accessScope' | 'zoneIds'> & { expectedVersion: number | null; reason: string | null }

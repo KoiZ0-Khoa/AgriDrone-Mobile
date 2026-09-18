@@ -18,6 +18,7 @@ export default function AccountScreen() {
     <View><Text style={ui.heading}>Thông tin cá nhân</Text><Detail label="Email" value={session.email} /><Detail label="Điện thoại" value={session.phone ?? 'Chưa cập nhật'} /></View>
     <View style={styles.workspace}><View style={ui.row}><Icon name="business-outline" color={colors.ink} /><Text style={ui.heading}>Đơn vị làm việc</Text></View><Text style={styles.tenant}>{session.tenant.name}</Text><Text style={ui.muted}>{session.tenant.code}</Text><Text style={ui.muted}>Để đổi đơn vị, đăng xuất và chọn đơn vị khác ở lần đăng nhập tiếp theo.</Text></View>
     <Button title="Hồ sơ và mật khẩu" secondary icon="person-outline" onPress={() => router.push('/profile')} />
+    <Button title="Nông trại được giao" secondary icon="leaf-outline" onPress={() => router.push('/my-farms')} />
     {session.role === 'OWNER' || session.role === 'TENANT_ADMIN' ? <Button title="Thành viên đơn vị" secondary icon="people-outline" onPress={() => router.push('/team')} /> : null}
     <ErrorNotice error={mutation.error} /><Button title="Đăng xuất" secondary icon="log-out-outline" loading={mutation.isPending} onPress={() => mutation.mutate()} />
     <View style={styles.footer}><Brand /><Text style={ui.muted}>Phiên bản 1.0.0</Text></View>

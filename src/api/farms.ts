@@ -1,5 +1,5 @@
 import { ApiError, request } from './client'
-import type { ArchiveRequest, Assignment, CreateFarm, CreateZone, Farm, FarmDetail, PagedResult, TenantUser, UpdateZoneRequest, UpdateZoneResponse, Zone } from './types'
+import type { ArchiveRequest, Assignment, AssignFarmMemberRequest, CreateFarm, CreateZone, Farm, FarmDetail, PagedResult, TenantUser, UpdateZoneRequest, UpdateZoneResponse, Zone } from './types'
 
 const farmPath = (id: string) => `/api/farms/${encodeURIComponent(id)}`
 export const getFarms = (token: string, page = 1, signal?: AbortSignal) => request<PagedResult<Farm>>(`/api/farms?pageNumber=${page}&pageSize=20`, { token, signal })
@@ -12,13 +12,13 @@ export const updateZone = (token: string, farmId: string, zoneId: string, body: 
 export const archiveZone = (token: string, farmId: string, zoneId: string, body: ArchiveRequest) => request<void>(`${farmPath(farmId)}/zones/${encodeURIComponent(zoneId)}/archive`, { method: 'PUT', token, body })
 export const archiveFarm = (token: string, farmId: string, body: ArchiveRequest) => request<void>(`${farmPath(farmId)}/archive`, { method: 'PUT', token, body })
 
-export async function getAdmins(token: string, signal?: AbortSignal) {
+export async function getAssignableUsers(token: string, actorRole: string, signal?: AbortSignal) {
   const admins: TenantUser[] = []
   let pageNumber = 1
   let more = true
   while (more) {
     const page = await request<PagedResult<TenantUser>>(`/tenants/current/users?pageNumber=${pageNumber}&pageSize=100`, { token, signal })
-    admins.push(...page.items.filter(user => user.role === 1 && user.status === 0))
+    admins.push(...page.items.filter(user => user.status === 0 && (user.role === 2 || (actorRole === 'OWNER' && user.role === 1))))
     more = page.hasNextPage
     pageNumber++
   }
@@ -32,6 +32,6 @@ export async function getAssignment(token: string, farmId: string, userId: strin
     throw error
   }
 }
-export const assignManager = (token: string, farmId: string, userId: string, expectedVersion: number | null, reason: string) => request<Assignment>(assignmentPath(farmId, userId), {
-  method: 'PUT', token, body: { role: 'MANAGER', accessScope: 'ALL_ZONES', zoneIds: [], expectedVersion, reason: reason.trim() || null },
+export const assignFarmMember = (token: string, farmId: string, userId: string, body: AssignFarmMemberRequest) => request<Assignment>(assignmentPath(farmId, userId), {
+  method: 'PUT', token, body,
 })

@@ -9,7 +9,8 @@ import { useFarmCatalog } from '../../src/farms/useFarmCatalog'
 import { FarmMap } from '../../src/farms/FarmMap'
 import { farmCoordinate } from '../../src/farms/geo'
 import { FarmRow } from '../../src/farms/FarmRow'
-import { Button, DataError, Empty, formatArea, Icon, isActive, Loading, Screen } from '../../src/ui/components'
+import { MyFarms } from '../../src/management/MyFarms'
+import { Button, DataError, Empty, formatArea, Icon, isActive, Loading } from '../../src/ui/components'
 import { FloatingAdd, Segments, ToolbarAction } from '../../src/ui/operations'
 import { colors, fonts, ui } from '../../src/ui/theme'
 
@@ -31,7 +32,7 @@ export default function FarmsScreen() {
   const selected = located.find(farm => farm.id === selectedId) ?? located[0]
   const renderItem = useCallback(({ item }: { item: Farm }) => <FarmRow farm={item} />, [])
   const loadMore = query.hasNextPage ? <Button title={`Tải thêm (${farms.length}/${total})`} secondary loading={query.isFetchingNextPage} onPress={() => { void query.fetchNextPage() }} /> : null
-  if (!permitted) return <SafeAreaView edges={['top']} style={ui.fill}><Screen><Text style={ui.title}>Nông trại</Text><Empty icon="lock-closed-outline" title="Danh sách theo phân công chưa khả dụng" description="Nông trại được giao sẽ xuất hiện cùng tính năng công việc hiện trường." /></Screen></SafeAreaView>
+  if (!permitted) return <SafeAreaView edges={['top']} style={ui.fill}><MyFarms /></SafeAreaView>
   return <SafeAreaView edges={['top']} style={ui.fill}>
     <View style={styles.header}>
       <View style={ui.spread}><Text accessibilityRole="header" style={[ui.title, ui.grow]}>Nông trại</Text><ToolbarAction icon="options-outline" label="Lọc nông trại" active={filter !== 'all'} onPress={() => setFilterOpen(true)} /><ToolbarAction icon="refresh-outline" label="Tải lại nông trại" onPress={() => { void query.refetch() }} /></View>

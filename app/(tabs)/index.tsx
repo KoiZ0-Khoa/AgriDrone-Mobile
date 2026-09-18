@@ -7,7 +7,7 @@ import { useFarmCatalog } from '../../src/farms/useFarmCatalog'
 import { FarmMap } from '../../src/farms/FarmMap'
 import { FarmRow } from '../../src/farms/FarmRow'
 import { farmCoordinate } from '../../src/farms/geo'
-import { DataError, Empty, Icon, Loading } from '../../src/ui/components'
+import { Button, DataError, Empty, Icon, Loading } from '../../src/ui/components'
 import { FloatingAdd, SectionHeading, ToolbarAction } from '../../src/ui/operations'
 import { colors, fonts, ui } from '../../src/ui/theme'
 
@@ -38,7 +38,7 @@ export default function HomeScreen() {
         <SectionHeading title="Hôm nay" action="Công việc" onPress={() => router.push('/work')} />
         <Pressable accessibilityRole="button" onPress={() => router.push('/work')} style={({ pressed }) => [styles.today, pressed && ui.pressed]}><View style={ui.spread}><Icon name="calendar-outline" color={colors.muted} size={28} /><Icon name="arrow-forward" color={colors.ink} /></View><Text style={ui.heading}>Chuẩn bị cho ngày ngoài vườn</Text><Text style={ui.muted}>Lịch phân công và xác minh cây sẽ có ở phiên bản tiếp theo.</Text></Pressable>
         <SectionHeading title="Nông trại của bạn" action={permitted ? 'Xem tất cả' : undefined} onPress={() => router.push('/farms')} />
-        {permitted ? query.isPending ? <Loading /> : farms.length ? <View>{farms.slice(0, 3).map(farm => <FarmRow key={farm.id} farm={farm} />)}</View> : query.isSuccess ? <Empty title="Bắt đầu với nông trại đầu tiên" description="Nhấn nút + để thêm nông trại và vị trí canh tác." /> : null : <Empty icon="lock-closed-outline" title="Làm việc theo phân công" description="Danh sách nông trại được giao sẽ xuất hiện khi tính năng công việc hiện trường khả dụng." />}
+        {permitted ? query.isPending ? <Loading /> : farms.length ? <View>{farms.slice(0, 3).map(farm => <FarmRow key={farm.id} farm={farm} />)}</View> : query.isSuccess ? <Empty title="Bắt đầu với nông trại đầu tiên" description="Nhấn nút + để thêm nông trại và vị trí canh tác." /> : null : <Button title="Xem nông trại được giao" secondary onPress={() => router.push('/my-farms')} />}
       </View>
     </ScrollView>
     {permitted ? <FloatingAdd label="Thêm nông trại" onPress={() => router.push('/farm/create')} /> : null}

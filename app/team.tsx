@@ -5,7 +5,7 @@ import { useAuth } from '../src/auth/AuthProvider'
 import { Button, DataError, Empty, Heading, Loading, Notice, Screen } from '../src/ui/components'
 import { ui } from '../src/ui/theme'
 import * as api from '../src/management/api'
-import { confirmation, inviteAction, roleLabel, type Action } from '../src/management/actions'
+import { confirmation, inviteAction, inviteMemberAction, roleLabel, type Action } from '../src/management/actions'
 import { ActionModal } from '../src/management/ActionModal'
 export default function TeamScreen() {
   const { session, logout } = useAuth()
@@ -19,6 +19,7 @@ export default function TeamScreen() {
   const token = session.accessToken
   const choose = (next: Action) => { setSaved(''); setAction(next) }
   return <Screen><Heading title="Thành viên" description={session.tenant.name} />
+    <Button title="Mời thành viên" icon="person-add-outline" onPress={() => choose(inviteMemberAction(token))} />
     {session.role === 'OWNER' ? <Button title="Mời quản trị viên" icon="person-add-outline" onPress={() => choose(inviteAction(token))} /> : null}
     {saved ? <Notice title={saved} /> : null}
     {query.isPending ? <Loading /> : query.isError ? <DataError error={query.error} retry={() => { void query.refetch() }} /> : query.data.items.length === 0 ? <Empty title="Chưa có thành viên" description="Thành viên tham gia đơn vị sẽ xuất hiện tại đây." /> : null}
