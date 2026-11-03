@@ -1,5 +1,6 @@
+import { ManagerHome } from '../../src/surveys/ManagerHome'
 import { useCallback, useEffect, useState } from 'react'
-import { router, useLocalSearchParams } from 'expo-router'
+import { Redirect, router, useLocalSearchParams } from 'expo-router'
 import { FlashList } from '@shopify/flash-list'
 import { Modal, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -9,7 +10,6 @@ import { useFarmCatalog } from '../../src/farms/useFarmCatalog'
 import { FarmMap } from '../../src/farms/FarmMap'
 import { farmCoordinate } from '../../src/farms/geo'
 import { FarmRow } from '../../src/farms/FarmRow'
-import { MyFarms } from '../../src/management/MyFarms'
 import { Button, DataError, Empty, formatArea, Icon, isActive, Loading } from '../../src/ui/components'
 import { FloatingAdd, Segments, ToolbarAction } from '../../src/ui/operations'
 import { colors, fonts, ui } from '../../src/ui/theme'
@@ -32,11 +32,12 @@ export default function FarmsScreen() {
   const selected = located.find(farm => farm.id === selectedId) ?? located[0]
   const renderItem = useCallback(({ item }: { item: Farm }) => <FarmRow farm={item} />, [])
   const loadMore = query.hasNextPage ? <Button title={`Tải thêm (${farms.length}/${total})`} secondary loading={query.isFetchingNextPage} onPress={() => { void query.fetchNextPage() }} /> : null
-  if (!permitted) return <SafeAreaView edges={['top']} style={ui.fill}><MyFarms /></SafeAreaView>
+  if (session?.role === 'SYSTEM_MANAGER') return <ManagerHome farmsOnly />
+  if (!permitted) return <Redirect href="/" />
   return <SafeAreaView edges={['top']} style={ui.fill}>
     <View style={styles.header}>
       <View style={ui.spread}><Text accessibilityRole="header" style={[ui.title, ui.grow]}>Nông trại</Text><ToolbarAction icon="options-outline" label="Lọc nông trại" active={filter !== 'all'} onPress={() => setFilterOpen(true)} /><ToolbarAction icon="refresh-outline" label="Tải lại nông trại" onPress={() => { void query.refetch() }} /></View>
-      <Text numberOfLines={1} style={ui.muted}>{session?.tenant.name}</Text>
+      <Text numberOfLines={1} style={ui.muted}>{session?.tenant?.name}</Text>{session?.role === 'OWNER' ? <View style={ui.stack}><Button title="Đăng ký nông trại mới" onPress={() => router.push('/surveys/request')} /><Button secondary title="Xem nông trại đã lưu trữ" icon="archive-outline" onPress={() => router.push('/surveys/archived')} /></View> : null}
       <View style={styles.search}><Icon name="search-outline" color={colors.muted} size={20} /><TextInput accessibilityLabel="Tìm nông trại theo tên, mã hoặc địa chỉ" value={search} onChangeText={setSearch} placeholder="Tìm tên, mã hoặc địa chỉ" placeholderTextColor={colors.muted} style={styles.searchInput} returnKeyType="search" autoCorrect={false} />{search ? <ToolbarAction icon="close" label="Xóa tìm kiếm" onPress={() => setSearch('')} /> : null}</View>
       <Segments options={[...modes]} value={mode} onChange={value => { setMode(value); router.setParams({ view: value }) }} />
     </View>
@@ -44,7 +45,7 @@ export default function FarmsScreen() {
     {query.isError && mode === 'map' ? <View style={styles.feedback}><DataError error={query.error} retry={() => { void query.refetch() }} /></View> : null}
     {mode === 'list' ? <FlashList data={visible} renderItem={renderItem} keyExtractor={farm => farm.id} contentContainerStyle={styles.list} keyboardShouldPersistTaps="handled" refreshControl={<RefreshControl refreshing={query.isRefetching && !query.isFetchingNextPage} onRefresh={() => { void query.refetch() }} tintColor={colors.mint} />}
       ListHeaderComponent={<View>{query.hasNextPage ? <Text style={styles.hint}>Tìm và lọc trong {farms.length} nông trại đã tải.</Text> : null}{query.isError ? <DataError error={query.error} retry={() => { void query.refetch() }} /> : null}</View>}
-      ListEmptyComponent={query.isPending ? <Loading /> : query.isSuccess ? <Empty title={search || filter !== 'all' ? 'Không có nông trại phù hợp' : 'Chưa có nông trại'} description={search || filter !== 'all' ? 'Thử đổi từ khóa hoặc bộ lọc. Nếu còn trang dữ liệu, tải thêm để tìm tiếp.' : 'Nhấn + để tạo nông trại đầu tiên.'} /> : null}
+      ListEmptyComponent={query.isPending ? <Loading /> : query.isSuccess ? <Empty title={search || filter !== 'all' ? 'Không có nông trại phù hợp' : 'Chưa có nông trại'} description={search || filter !== 'all' ? 'Thử đổi từ khóa hoặc bộ lọc. Nếu còn trang dữ liệu, tải thêm để tìm tiếp.' : 'Chủ đơn vị đăng ký khảo sát để tạo nông trại mới.'} /> : null}
       ListFooterComponent={<View style={styles.footer}>{loadMore}</View>} />
       : <View style={styles.mapArea}><View style={ui.grow}><FarmMap farms={located} selectedId={selected?.id} onSelect={farm => setSelectedId(farm.id)} /></View>
         <View style={styles.mapPanel}><ScrollView style={styles.panelScroll} contentContainerStyle={ui.stack} keyboardShouldPersistTaps="handled">
@@ -53,7 +54,7 @@ export default function FarmsScreen() {
           {loadMore}
         </ScrollView></View>
       </View>}
-    {mode === 'list' ? <FloatingAdd label="Thêm nông trại" onPress={() => router.push('/farm/create')} /> : null}
+    {mode === 'list' && session?.role === 'OWNER' ? <FloatingAdd label="Đăng ký nông trại" onPress={() => router.push('/farm/create')} /> : null}
     <Modal visible={filterOpen} transparent animationType="slide" onRequestClose={() => setFilterOpen(false)}>
       <View style={styles.modal}><Pressable accessibilityRole="button" accessibilityLabel="Đóng bộ lọc" style={StyleSheet.absoluteFill} onPress={() => setFilterOpen(false)} /><SafeAreaView edges={['bottom']} accessibilityViewIsModal style={styles.sheet}><View style={styles.handle} /><View style={ui.spread}><Text style={ui.heading}>Hiển thị nông trại</Text><ToolbarAction icon="close" label="Đóng bộ lọc" onPress={() => setFilterOpen(false)} /></View>{filters.map(item => <Pressable key={item.value} accessibilityRole="radio" accessibilityState={{ checked: filter === item.value }} onPress={() => { setFilter(item.value); setFilterOpen(false) }} style={styles.filterRow}><Text style={ui.text}>{item.label}</Text><Icon name={filter === item.value ? 'radio-button-on' : 'radio-button-off'} color={filter === item.value ? colors.mint : colors.muted} /></Pressable>)}</SafeAreaView></View>
     </Modal>

@@ -1,7 +1,8 @@
 export type TenantRole = 'OWNER' | 'TENANT_ADMIN' | 'MEMBER'
 export type Tenant = { id: string; code: string; name: string }
 export type TenantOption = Tenant & { role: TenantRole | 'Owner' | 'TenantAdmin' | 'Member' | 0 | 1 | 2 }
-export type Session = { email: string; fullName: string; phone: string | null; accessToken: string; expiresAt: string; tenant: Tenant; role: TenantRole }
+type SessionFields = { email: string; fullName: string; phone: string | null; accessToken: string; expiresAt: string; }
+export type Session = SessionFields & ({ tenant: Tenant; role: TenantRole } | { tenant: null; role: 'SYSTEM_MANAGER' })
 export type TenantSelection = { selectionToken: string; expiresAt: string; tenants: TenantOption[] }
 export type LoginResponse = {
   email: string; fullName: string; phone: string | null

@@ -7,7 +7,7 @@ export function useFarmCatalog() {
   const { session } = useAuth()
   const permitted = canManageFarms(session)
   const query = useInfiniteQuery({
-    queryKey: ['farms', session?.tenant.id, 'list'], initialPageParam: 1,
+    queryKey: ['farms', session?.tenant?.id, 'list'], initialPageParam: 1,
     queryFn: ({ pageParam, signal }) => getFarms(session!.accessToken, pageParam, signal),
     getNextPageParam: page => page.hasNextPage ? page.pageNumber + 1 : undefined, enabled: permitted,
   })

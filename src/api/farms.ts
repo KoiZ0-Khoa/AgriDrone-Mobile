@@ -5,6 +5,7 @@ const farmPath = (id: string) => `/api/farms/${encodeURIComponent(id)}`
 export const getFarms = (token: string, page = 1, signal?: AbortSignal) => request<PagedResult<Farm>>(`/api/farms?pageNumber=${page}&pageSize=20`, { token, signal })
 export const getFarm = (token: string, id: string, signal?: AbortSignal) => request<FarmDetail>(farmPath(id), { token, signal })
 export const getZones = (token: string, id: string, signal?: AbortSignal) => request<Zone[]>(`${farmPath(id)}/zones`, { token, signal })
+/** Legacy contract absent from BE 6f172ef; do not call from Mobile screens. */
 export const createFarm = (token: string, body: CreateFarm) => request<{ farmId: string }>('/api/farms', { method: 'POST', token, body })
 export const createZone = (token: string, id: string, body: CreateZone) => request<Zone>(`${farmPath(id)}/zones`, { method: 'POST', token, body })
 export const getZone = (token: string, farmId: string, zoneId: string, signal?: AbortSignal) => request<Zone>(`${farmPath(farmId)}/zones/${encodeURIComponent(zoneId)}`, { token, signal })
@@ -12,6 +13,7 @@ export const updateZone = (token: string, farmId: string, zoneId: string, body: 
 export const archiveZone = (token: string, farmId: string, zoneId: string, body: ArchiveRequest) => request<void>(`${farmPath(farmId)}/zones/${encodeURIComponent(zoneId)}/archive`, { method: 'PUT', token, body })
 export const archiveFarm = (token: string, farmId: string, body: ArchiveRequest) => request<void>(`${farmPath(farmId)}/archive`, { method: 'PUT', token, body })
 
+/** Legacy contract absent from BE 6f172ef; do not call from Mobile screens. */
 export async function getAssignableUsers(token: string, actorRole: string, signal?: AbortSignal) {
   const admins: TenantUser[] = []
   let pageNumber = 1
@@ -25,6 +27,7 @@ export async function getAssignableUsers(token: string, actorRole: string, signa
   return admins
 }
 const assignmentPath = (farmId: string, userId: string) => `${farmPath(farmId)}/members/${encodeURIComponent(userId)}/assignment`
+/** Legacy contract absent from BE 6f172ef; do not call from Mobile screens. */
 export async function getAssignment(token: string, farmId: string, userId: string, signal?: AbortSignal) {
   try { return await request<Assignment>(assignmentPath(farmId, userId), { token, signal }) }
   catch (error) {
@@ -32,6 +35,7 @@ export async function getAssignment(token: string, farmId: string, userId: strin
     throw error
   }
 }
+/** Legacy contract absent from BE 6f172ef; do not call from Mobile screens. */
 export const assignFarmMember = (token: string, farmId: string, userId: string, body: AssignFarmMemberRequest) => request<Assignment>(assignmentPath(farmId, userId), {
   method: 'PUT', token, body,
 })

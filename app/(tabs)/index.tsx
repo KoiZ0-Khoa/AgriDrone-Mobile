@@ -1,3 +1,4 @@
+import { ManagerHome } from '../../src/surveys/ManagerHome'
 import { router } from 'expo-router'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
@@ -7,7 +8,7 @@ import { useFarmCatalog } from '../../src/farms/useFarmCatalog'
 import { FarmMap } from '../../src/farms/FarmMap'
 import { FarmRow } from '../../src/farms/FarmRow'
 import { farmCoordinate } from '../../src/farms/geo'
-import { Button, DataError, Empty, Icon, Loading } from '../../src/ui/components'
+import { Button, DataError, Empty, Heading, Icon, Loading, Screen } from '../../src/ui/components'
 import { FloatingAdd, SectionHeading, ToolbarAction } from '../../src/ui/operations'
 import { colors, fonts, ui } from '../../src/ui/theme'
 
@@ -16,6 +17,8 @@ export default function HomeScreen() {
   const { session } = useAuth()
   const { query, farms, permitted, total } = useFarmCatalog()
   if (!session) return null
+  if (session.role === 'SYSTEM_MANAGER') return <ManagerHome />
+  if (session.role === 'MEMBER') return <SafeAreaView edges={['top']} style={ui.fill}><Screen><Heading title={`Chào ${session.fullName}`} description={session.tenant.name} /><Button title="Tài khoản của bạn" secondary icon="person-outline" onPress={() => router.push('/account')} /></Screen></SafeAreaView>
   const now = new Date()
   const greeting = now.getHours() < 12 ? 'Chào buổi sáng' : now.getHours() < 18 ? 'Chào buổi chiều' : 'Chào buổi tối'
   const located = farms.filter(farm => farmCoordinate(farm))
@@ -24,24 +27,23 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={ui.spread}><Text style={[ui.muted, ui.grow]}>{dateFormat.format(now)}</Text><ToolbarAction icon="person-circle-outline" label="Mở tài khoản" onPress={() => router.push('/account')} /></View>
         <Text accessibilityRole="header" style={styles.greeting}>{greeting},{'\n'}{session.fullName.trim().split(/\s+/).at(-1)}.</Text>
-        <Text style={ui.muted}>{session.tenant.name}</Text>
+        <Text style={ui.muted}>{session.tenant?.name}</Text>
       </View>
       <View style={styles.mapHero}>
         <FarmMap farms={located} interactive={false} />
         <LinearGradient pointerEvents="none" colors={[colors.white, '#ffffff00']} style={styles.mapFade} />
-        {permitted && query.isSuccess && located.length === 0 ? <View style={styles.mapMessage}><Icon name="location-outline" /><Text style={styles.mapMessageText}>{farms.length ? 'Thêm tọa độ để thấy nông trại trên bản đồ' : 'Bản đồ sẵn sàng cho nông trại đầu tiên'}</Text></View> : null}
+        {permitted && query.isSuccess && located.length === 0 ? <View style={styles.mapMessage}><Icon name="location-outline" /><Text style={styles.mapMessageText}>{farms.length ? 'Nông trại chưa có vị trí trên bản đồ' : 'Bản đồ sẵn sàng cho nông trại đầu tiên'}</Text></View> : null}
         {permitted ? <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/farms', params: { view: 'map' } })} style={({ pressed }) => [styles.viewAll, pressed && ui.pressed]}><Text style={styles.viewAllText}>Xem bản đồ</Text><Icon name="chevron-forward" color={colors.ink} size={18} /></Pressable> : null}
       </View>
       <View style={styles.body}>
         {query.isError ? <DataError error={query.error} retry={() => { void query.refetch() }} /> : null}
         {permitted ? <View style={styles.summary}><View style={ui.grow}><Text style={styles.number}>{total ?? '—'}</Text><Text style={ui.muted}>Nông trại trong đơn vị</Text></View><View style={styles.summaryDivider} /><View style={ui.grow}><Text style={styles.number}>{query.isSuccess ? located.length : '—'}</Text><Text style={ui.muted}>Vị trí trong {farms.length} mục đã tải</Text></View></View> : null}
-        <SectionHeading title="Hôm nay" action="Công việc" onPress={() => router.push('/work')} />
-        <Pressable accessibilityRole="button" onPress={() => router.push('/work')} style={({ pressed }) => [styles.today, pressed && ui.pressed]}><View style={ui.spread}><Icon name="calendar-outline" color={colors.muted} size={28} /><Icon name="arrow-forward" color={colors.ink} /></View><Text style={ui.heading}>Chuẩn bị cho ngày ngoài vườn</Text><Text style={ui.muted}>Lịch phân công và xác minh cây sẽ có ở phiên bản tiếp theo.</Text></Pressable>
+        {session.role === 'OWNER' ? <><SectionHeading title="Hôm nay" action="Công việc" onPress={() => router.push('/work')} /><Pressable accessibilityRole="button" onPress={() => router.push('/work')} style={({ pressed }) => [styles.today, pressed && ui.pressed]}><View style={ui.spread}><Icon name="calendar-outline" color={colors.muted} size={28} /><Icon name="arrow-forward" color={colors.ink} /></View><Text style={ui.heading}>Lịch khảo sát của bạn</Text><Text style={ui.muted}>Xem lịch hẹn và thanh toán trong Công việc.</Text></Pressable></> : null}
         <SectionHeading title="Nông trại của bạn" action={permitted ? 'Xem tất cả' : undefined} onPress={() => router.push('/farms')} />
-        {permitted ? query.isPending ? <Loading /> : farms.length ? <View>{farms.slice(0, 3).map(farm => <FarmRow key={farm.id} farm={farm} />)}</View> : query.isSuccess ? <Empty title="Bắt đầu với nông trại đầu tiên" description="Nhấn nút + để thêm nông trại và vị trí canh tác." /> : null : <Button title="Xem nông trại được giao" secondary onPress={() => router.push('/my-farms')} />}
+        {permitted ? query.isPending ? <Loading /> : farms.length ? <View>{farms.slice(0, 3).map(farm => <FarmRow key={farm.id} farm={farm} />)}</View> : query.isSuccess ? <Empty title="Bắt đầu với nông trại đầu tiên" description="Chủ đơn vị đăng ký khảo sát để tạo nông trại mới." /> : null : null}
       </View>
     </ScrollView>
-    {permitted ? <FloatingAdd label="Thêm nông trại" onPress={() => router.push('/farm/create')} /> : null}
+    {session.role === 'OWNER' ? <FloatingAdd label="Đăng ký nông trại" onPress={() => router.push('/farm/create')} /> : null}
   </SafeAreaView>
 }
 const styles = StyleSheet.create({

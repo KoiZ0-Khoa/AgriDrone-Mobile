@@ -10,24 +10,29 @@ export type FarmScope = 'ALL_ZONES' | 'SELECTED_ZONES'
 export type FarmMember = { farmMembershipId: string; farmId: string; userId: string; email: string; fullName: string; tenantRole: string; role: FarmRole; accessScope: FarmScope; zoneIds: string[]; status: 'ACTIVE' | 'INACTIVE'; version: number; joinedAt: string }
 export type MyFarmAssignment = { farmMembershipId: string; farm: { id: string; code: string; name: string; address: string | null; areaHectares: number | null }; role: FarmRole; accessScope: FarmScope; zones: { id: string; code: string; name: string; areaHectares: number | null }[]; status: 'ACTIVE' | 'INACTIVE'; version: number; joinedAt: string }
 const id = encodeURIComponent
+/** Legacy contract absent from BE 6f172ef; do not call from Mobile screens. */
 export const getMembers = (token: string, page: number) => request<Page<User>>(`/tenants/current/users?pageNumber=${page}&pageSize=20`, { token })
 export const getTenants = (token: string, page: number) => request<Page<Tenant>>(`/api/system/tenants/all?pageNumber=${page}&pageSize=20`, { token })
 export const getUsers = (token: string, page: number) => request<Page<User>>(`/api/users?pageNumber=${page}&pageSize=20`, { token })
 export const getMemberships = (token: string, userId: string, page: number) => request<Page<Membership>>(`/api/system/users/${id(userId)}/tenants?pageNumber=${page}&pageSize=20`, { token })
 export const updateProfile = (token: string, body: { name: string; phone: string }) => request<Profile>('/current/profile', { method: 'PUT', token, body })
 export const changePassword = (token: string, body: { oldPassword: string; newPassword: string }) => request('/current/change-password', { method: 'PUT', token, body })
-export const updateFarm = (token: string, farmId: string, body: FarmUpdate) => request(`/api/farms/${id(farmId)}`, { method: 'PUT', token, body })
+export const updateFarm = (token: string, farmId: string, body: FarmUpdate) => request(`/api/farms/${id(farmId)}`, { method: 'PUT', token, body: { name: body.name, address: body.address, areaHectares: body.areaHectares, centerPoint: body.centerPoint, expectedVersion: body.expectedVersion } })
 export const changeMemberRole = (token: string, userId: string, role: 'MEMBER' | 'TENANT_ADMIN') => request<void>(`/api/tenants/current/members/${id(userId)}/role`, { method: 'PUT', token, body: { role } })
 export const changeMemberStatus = (token: string, userId: string, status: 'ACTIVE' | 'INACTIVE') => request<void>(`/api/tenants/current/members/${id(userId)}/status`, { method: 'PUT', token, body: { status } })
 export const transferOwnership = (token: string, newOwnerUserId: string) => request<void>('/api/tenants/current/transfer-ownership', { method: 'POST', token, body: { newOwnerUserId } })
+/** Legacy contract absent from BE 6f172ef; do not call from Mobile screens. */
 export const inviteAdmin = (token: string, email: string) => request('/current/invitations/tenant-admin', { method: 'POST', token, body: { email } })
+/** Legacy contract absent from BE 6f172ef; do not call from Mobile screens. */
 export const inviteMember = (token: string, email: string) => request('/api/tenants/current/invitations/member', { method: 'POST', token, body: { email } })
+/** Legacy contract absent from BE 6f172ef; do not call from Mobile screens. */
 export function getFarmMembers(token: string, farmId: string, page: number, role = '', status = '', signal?: AbortSignal) {
   const params = new URLSearchParams({ pageNumber: String(page), pageSize: '20' })
   if (role) params.set('role', role)
   if (status) params.set('status', status)
   return request<Page<FarmMember>>(`/api/farms/${id(farmId)}/members?${params}`, { token, signal })
 }
+/** Legacy contract absent from BE 6f172ef; do not call from Mobile screens. */
 export function getMyFarmAssignments(token: string, page: number, role = '', signal?: AbortSignal) {
   const params = new URLSearchParams({ pageNumber: String(page), pageSize: '20' })
   if (role) params.set('role', role)

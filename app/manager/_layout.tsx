@@ -1,0 +1,2 @@
+import { Stack } from 'expo-router'
+export default function ManagerLayout() { return <Stack screenOptions={{ headerBackButtonDisplayMode: 'minimal' }}><Stack.Screen name="farms/[farmId]/index" options={{ title: 'Nông trại phụ trách' }} /><Stack.Screen name="farms/[farmId]/base-map" options={{ title: 'Duyệt bản đồ nền' }} /><Stack.Screen name="farms/[farmId]/create-zone" options={{ title: 'Thêm khu vực' }} /><Stack.Screen name="orders/[orderId]" options={{ title: 'Công việc khảo sát' }} /></Stack> }

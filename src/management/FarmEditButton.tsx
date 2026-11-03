@@ -9,6 +9,6 @@ export function FarmEditButton({ farm }: { farm: FarmDetail }) {
   const { session } = useAuth()
   const [action, setAction] = useState<Action | null>(null)
   const [saved, setSaved] = useState('')
-  if (!session || !['OWNER', 'TENANT_ADMIN'].includes(session.role)) return null
+  if (!session || session.role !== 'SYSTEM_MANAGER') return null
   return <View>{saved ? <Notice title={saved} /> : null}<Button secondary title="Chỉnh sửa nông trại" icon="create-outline" onPress={() => { setSaved(''); setAction(farmAction(session.accessToken, farm.id, { ...farm, expectedVersion: farm.version })) }} />{action ? <ActionModal action={action} close={() => setAction(null)} success={setSaved} /> : null}</View>
 }

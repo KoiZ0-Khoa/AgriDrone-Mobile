@@ -32,10 +32,10 @@ export async function checkHealth(signal?: AbortSignal) {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string, public code?: string) { super(message); this.name = 'ApiError' }
+  constructor(public status: number, message: string, public code?: string, public traceId?: string) { super(message); this.name = 'ApiError' }
 }
 
-export async function request<T>(path: string, options: { method?: string; body?: unknown; token?: string; signal?: AbortSignal } = {}): Promise<T> {
+export async function request<T>(path: string, options: { method?: string; body?: unknown; token?: string; signal?: AbortSignal; headers?: Record<string, string>; credentials?: RequestCredentials } = {}): Promise<T> {
   const controller = new AbortController()
   const abort = () => controller.abort()
   if (options.signal?.aborted) abort()
@@ -43,15 +43,15 @@ export async function request<T>(path: string, options: { method?: string; body?
   const timeout = setTimeout(abort, 20_000)
   try {
     const response = await fetch(`${API_URL}${path}`, {
-      method: options.method ?? 'GET', signal: controller.signal,
-      headers: { Accept: 'application/json', ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }), ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}) },
+      method: options.method ?? 'GET', signal: controller.signal, credentials: options.credentials,
+      headers: { Accept: 'application/json', ...(options.body === undefined ? {} : { 'Content-Type': 'application/json' }), ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}), ...options.headers },
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     })
     if (!response.ok) {
-      const problem = await response.json().catch(() => ({})) as { detail?: string; title?: string; errorCode?: string; errors?: Record<string, string[]> }
+      const problem = await response.json().catch(() => ({})) as { detail?: string; title?: string; errorCode?: string; traceId?: string; errors?: Record<string, string[]> }
       if (response.status === 401 && options.token) unauthorizedHandler?.(options.token)
       const validation = problem.errors ? Object.values(problem.errors).flat()[0] : undefined
-      throw new ApiError(response.status, validation ?? problem.detail ?? problem.title ?? 'Không thể xử lý yêu cầu.', problem.errorCode)
+      throw new ApiError(response.status, validation ?? problem.detail ?? problem.title ?? 'Không thể xử lý yêu cầu.', problem.errorCode, problem.traceId)
     }
     if (response.status === 204) return undefined as T
     return await response.json() as T

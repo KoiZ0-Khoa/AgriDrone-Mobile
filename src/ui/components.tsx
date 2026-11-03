@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewProps, type TextInputProps } from 'react-native'
 import { useState, type ComponentProps, type PropsWithChildren } from 'react'
 import { colors, fonts, ui } from './theme'
-import { errorMessage } from '../api/client'
+import { ApiError, errorMessage } from '../api/client'
 import { Image } from 'expo-image'
 export type IconName = ComponentProps<typeof Ionicons>['name']
 export function Icon({ name, color = colors.mint, size = 22 }: { name: IconName; color?: string; size?: number }) { return <Ionicons name={name} color={color} size={size} /> }
@@ -27,7 +27,7 @@ export function Field({ label, secureTextEntry, ...props }: TextInputProps & { l
 export function Notice({ title, description, error = false }: { title: string; description?: string; error?: boolean }) {
   return <View accessibilityLiveRegion="polite" style={[styles.notice, error && styles.noticeError]}><Icon name={error ? 'alert-circle-outline' : 'information-circle-outline'} color={error ? colors.danger : colors.mint} /><View style={ui.grow}><Text style={[styles.noticeTitle, error && styles.errorText]}>{title}</Text>{description ? <Text style={ui.muted}>{description}</Text> : null}</View></View>
 }
-export function ErrorNotice({ error }: { error: unknown }) { return error ? <Notice error title={errorMessage(error)} /> : null }
+export function ErrorNotice({ error }: { error: unknown }) { return error ? <Notice error title={errorMessage(error)} description={error instanceof ApiError ? [error.message !== errorMessage(error) ? error.message : null, error.code ? `Mã lỗi: ${error.code}` : null, error.traceId ? `Mã tra cứu: ${error.traceId}` : null].filter(Boolean).join('\n') : undefined} /> : null }
 export function Empty({ title, description, icon = 'leaf-outline' }: { title: string; description: string; icon?: IconName }) {
   return <View style={styles.empty}><View style={styles.emptyIcon}><Icon name={icon} size={30} /></View><Text style={[ui.heading, styles.center]}>{title}</Text><Text style={[ui.muted, styles.center]}>{description}</Text></View>
 }
@@ -39,7 +39,7 @@ export function ActionRow({ title, description, icon, onPress }: { title: string
   return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [ui.card, ui.row, pressed && ui.pressed]}><View style={ui.iconBox}><Icon name={icon} /></View><View style={ui.grow}><Text style={styles.noticeTitle}>{title}</Text><Text style={ui.muted}>{description}</Text></View><Icon name="chevron-forward" size={18} color={colors.muted} /></Pressable>
 }
 export const isActive = (status: unknown) => status === 0 || status === 'Active' || status === 'ACTIVE'
-const areaFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 2 })
+const areaFormat = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 4 })
 const dateFormat = new Intl.DateTimeFormat('vi-VN', { dateStyle: 'medium' })
 export const formatArea = (value: number | null) => value === null ? 'Chưa cập nhật' : `${areaFormat.format(value)} ha`
 export const formatDate = (value: string) => dateFormat.format(new Date(value))
