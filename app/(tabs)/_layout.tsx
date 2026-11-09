@@ -1,5 +1,5 @@
 import { useAuth } from '../../src/auth/AuthProvider'
-import { NativeTabs } from 'expo-router/unstable-native-tabs'
+import { NativeTabs } from 'expo-router/native-tabs'
 import { colors, fonts } from '../../src/ui/theme'
 export default function TabsLayout() {
   const role = useAuth().session?.role

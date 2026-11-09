@@ -4,15 +4,18 @@
 
 ## Chạy trên điện thoại
 
-Yêu cầu Node.js 22.13 trở lên, npm và Expo Go tương thích SDK 57 hoặc development build.
+Project dùng Expo SDK 58. Yêu cầu Node.js 22.13 trở lên trên nhánh 22 (hoặc phiên bản Node được Expo hỗ trợ), npm và Expo Go tương thích SDK 58 hoặc development build được tạo từ SDK 58.
 
 ```powershell
-npm install
-Copy-Item .env.example .env
-npm start -- --go
+npm.cmd ci
+# Chỉ tạo .env nếu chưa có; giữ cấu hình hiện tại khi nâng cấp.
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+npm.cmd start -- --go --lan --clear
 ```
 
 Khi BE và Expo chạy trên cùng máy, để `EXPO_PUBLIC_API_URL=` trống trong `.env`. Trong chế độ phát triển LAN, app tự lấy IPv4 nội bộ của máy Expo và gọi BE ở cổng 5080. Khi đổi địa điểm/Wi-Fi, kết nối điện thoại và laptop vào cùng mạng, dừng Expo rồi chạy `npm.cmd start -- --go --lan --clear` và quét QR mới. Không cần sửa IP trong `.env`.
+
+Sau khi cập nhật từ SDK 57 lên SDK 58, dừng Metro cũ bằng Ctrl+C và chạy lại lệnh trên, rồi quét QR mới bằng Expo Go SDK 58. Nếu dùng development build đã cài từ SDK 57, cần build và cài lại ứng dụng; chỉ reload JavaScript không cập nhật các module native. Không cần đổi cấu hình BE cho lần nâng SDK này. Kiểm tra thư viện bằng `npx.cmd expo install --check` và `npx.cmd expo-doctor`; kiểm tra code bằng `npm.cmd run typecheck`, `npm.cmd test`, `npm.cmd run export`.
 
 Nếu BE ở máy khác, dùng Expo tunnel hoặc chạy bản cài độc lập, đặt `EXPO_PUBLIC_API_URL` rõ ràng:
 
@@ -76,7 +79,7 @@ Luồng chính: **Trang chủ → Xem bản đồ → chọn nông trại → Xe
 
 Thay đổi theo mẫu Jobber: tiêu đề lớn, bản đồ chiếm phần chính ở trang chủ, bộ chuyển chế độ nền kem, danh sách dùng đường phân cách, thanh màu biểu thị trạng thái, bộ lọc mở từ dưới và nút + nổi. Native bottom tabs được giữ để phù hợp iOS/Android. Không đưa lịch Day/List/Map, timesheet hay chuông thông báo vào khi chưa có nghiệp vụ tương ứng.
 
-Bản đồ dùng `react-native-maps`: Expo Go không cần API key riêng; iOS mặc định dùng Apple Maps. Bản Android cài riêng cần `GOOGLE_MAPS_ANDROID_API_KEY` khi build, giới hạn key theo package `com.agridrone.mobile` và chứng chỉ ký. Nếu chưa cấu hình key, bản cài Android hiển thị trạng thái chưa hỗ trợ bản đồ và vẫn dùng danh sách được. Xem [hướng dẫn Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/sdk/map-view/).
+Bản đồ dùng `react-native-maps`: Expo Go không cần API key riêng; iOS mặc định dùng Apple Maps. Bản Android cài riêng cần `GOOGLE_MAPS_ANDROID_API_KEY` khi build, giới hạn key theo package `com.agridrone.mobile` và chứng chỉ ký. Nếu chưa cấu hình key, bản cài Android hiển thị trạng thái chưa hỗ trợ bản đồ và vẫn dùng danh sách được. Xem [hướng dẫn Expo SDK 58](https://docs.expo.dev/versions/v58.0.0/sdk/map-view/).
 
 Web preview của repo mobile hiển thị thông báo thay thế bản đồ native; không tải tile hoặc tọa độ giả. AgriDrone-FE không bị thay đổi bởi đợt thiết kế mobile này.
 
