@@ -1,6 +1,6 @@
 import { request } from '../api/client'
 import type { AssignedFarm, Intake, Page, PublicService } from './types'
-import type { Appointment, AppointmentBody, AssignedOrder, OrderScope, OrthophotoBody, PaymentSession } from './orderTypes'
+import type { Appointment, AppointmentBody, AssignedOrder, CaptureAppointmentBody, OrderScope, OrthophotoBody, PaymentSession } from './orderTypes'
 import type { OwnerAppointmentBody, OwnerSurveyOrder } from './ownerOrderTypes'
 import type { PaymentHistory } from './paymentWorkflow'
 
@@ -22,6 +22,7 @@ export async function getAssignedOrder(token: string, orderId: string, signal?: 
 }
 export const getOrderScope = (token: string, orderId: string, signal?: AbortSignal) => request<OrderScope>(`${manager}/${id(orderId)}/boundary-scope`, { token, signal })
 export const proposeAppointment = (token: string, orderId: string, body: AppointmentBody) => request<Appointment>(`${manager}/${id(orderId)}/appointments`, { token, method: 'POST', body })
+export const proposeCaptureAppointment = (token: string, orderId: string, body: CaptureAppointmentBody) => request<Appointment>(`/api/v3/system-manager/survey-orders/${id(orderId)}/capture-appointments`, { token, method: 'POST', body })
 export const markOrthophotoCorners = (token: string, orderId: string, body: OrthophotoBody) => request(`${manager}/${id(orderId)}/farm-boundary/mark-orthophoto-corners`, { token, method: 'POST', body })
 export const confirmPoleCount = (token: string, orderId: string, body: { expectedOrderVersion: number; expectedFarmBaseMapVersionId: string; evidenceReference: string | null }) => request(`${manager}/${id(orderId)}/pole-count/confirm`, { token, method: 'POST', body })
 export const getOwnerOrders = (token: string, page = 1, signal?: AbortSignal) => request<Page<OwnerSurveyOrder>>(`${owner}?pageNumber=${page}&pageSize=20`, { token, signal })

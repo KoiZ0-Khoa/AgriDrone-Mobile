@@ -6,6 +6,7 @@ export type AssignedOrder = {
   status: string; orderVersion: number; requiresBaselineMapping: boolean; farmBoundaryVersionId: string | null
   boundaryCaptureSessionId: string | null; baselineRoutePlanId: string | null
   currentAppointmentId: string | null; currentAppointmentVersion: number | null; currentAppointmentStatus: string | null
+  currentAppointmentPurpose?: string | null
   createdAt: string; updatedAt: string
 }
 export type OrderScope = {
@@ -14,6 +15,7 @@ export type OrderScope = {
   zones: { zoneId: string; code: string; name: string; boundary: GeoJsonPolygon | null; status: string; version: number }[]
 }
 export type AppointmentBody = { purpose: 'BASELINE_MAPPING' | 'PAID_SERVICE'; proposedStartAt: string; proposedEndAt: string; expectedOrderVersion: number; expectedCurrentAppointmentId: string | null; expectedCurrentAppointmentVersion: number | null }
+export type CaptureAppointmentBody = Pick<AppointmentBody, 'expectedOrderVersion' | 'expectedCurrentAppointmentId' | 'expectedCurrentAppointmentVersion'> & { scheduledDate: string }
 export type Appointment = { surveyOrderId: string; appointmentId: string; purpose: string; revisionNumber: number; proposedStartAt: string; proposedEndAt: string; appointmentStatus: string; appointmentVersion: number; orderStatus: string; orderVersion: number }
 export type OrthophotoBody = { expectedOrderVersion: number; corners: { sequence: number; longitude: number; latitude: number }[]; reason: string | null; evidenceReference: string | null }
 export type PaymentPurpose = 'BASELINE_DEPOSIT' | 'FINAL_BALANCE'

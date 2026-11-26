@@ -8,8 +8,10 @@ const dataUrl = value => `data:text/javascript;base64,${Buffer.from(value).toStr
 const clientUrl = dataUrl(compile('../src/api/client.ts').replace("import Constants from 'expo-constants';", 'const Constants = {}; const __DEV__ = true;').replace("import { Platform } from 'react-native';", "const Platform = { OS: 'android' };").replace('process.env.EXPO_PUBLIC_API_URL', "'http://test.local'"))
 const api = await import(dataUrl(compile('../src/surveys/api.ts').replace("'../api/client'", JSON.stringify(clientUrl))))
 const auth = await import(dataUrl(compile('../src/auth/session.ts')))
-const flow = await import(dataUrl(compile('../src/surveys/orderWorkflow.ts')))
-const schedule = await import(dataUrl(compile('../src/surveys/schedule.ts')))
+const scheduleUrl = dataUrl(compile('../src/surveys/schedule.ts'))
+const schedule = await import(scheduleUrl)
+const baseMapUrl = dataUrl(compile('../src/surveys/baseMapWorkflow.ts'))
+const flow = await import(dataUrl(compile('../src/surveys/orderWorkflow.ts').replace("'./schedule'", JSON.stringify(scheduleUrl)).replace("'./baseMapWorkflow'", JSON.stringify(baseMapUrl))))
 const paymentsUrl = dataUrl(compile('../src/surveys/paymentWorkflow.ts'))
 const payments = await import(paymentsUrl)
 const owner = await import(dataUrl(compile('../src/surveys/ownerOrderWorkflow.ts').replace("'./paymentWorkflow'", JSON.stringify(paymentsUrl))))
@@ -51,6 +53,57 @@ test('Vietnam schedule input rejects normalized invalid dates and sends latest o
   const body = flow.appointmentBody(order, scope, '2099-01-01T01:00:00Z', '2099-01-01T02:00:00Z')
   assert.equal(body.expectedCurrentAppointmentVersion, 7); assert.equal(body.expectedOrderVersion, 10); assert.equal(body.expectedCurrentAppointmentId, appointmentId)
   assert.throws(() => flow.appointmentBody(order, { ...scope, orderVersion: 11 }, '2099-01-01T01:00:00Z', '2099-01-01T02:00:00Z'))
+})
+
+const v3AssignedOrder = {
+  surveyOrderId: orderId, orderVersion: 10, status: 'AWAITING_APPOINTMENT',
+  currentAppointmentId: null, currentAppointmentVersion: null, currentAppointmentStatus: null, currentAppointmentPurpose: null,
+}
+
+test('V3 capture appointments use the assigned order, Vietnam date and current appointment version', async () => {
+  const today = Date.parse('2026-12-01T02:00:00Z')
+  const original = flow.captureAppointmentBody(v3AssignedOrder, '2026-12-01', today)
+  assert.deepEqual(original, { scheduledDate: '2026-12-01', expectedOrderVersion: 10, expectedCurrentAppointmentId: null, expectedCurrentAppointmentVersion: null })
+  const revision = { ...v3AssignedOrder, orderVersion: 11, currentAppointmentId: appointmentId, currentAppointmentVersion: 7, currentAppointmentStatus: 'RESCHEDULE_REQUESTED', currentAppointmentPurpose: 'CAPTURE' }
+  assert.deepEqual(flow.captureAppointmentBody(revision, '2026-12-02', today), { scheduledDate: '2026-12-02', expectedOrderVersion: 11, expectedCurrentAppointmentId: appointmentId, expectedCurrentAppointmentVersion: 7 })
+
+  globalThis.fetch = async (url, options) => {
+    assert.equal(new URL(url).pathname, '/api/system-manager/survey-orders')
+    assert.equal(options.headers.Authorization, 'Bearer manager')
+    return Response.json({ items: [v3AssignedOrder], hasNextPage: false })
+  }
+  const assigned = await api.getAssignedOrder('manager', orderId)
+  assert.equal(flow.isCaptureOrder(assigned), true)
+  assert.equal(flow.canProposeCaptureAppointment(assigned), true)
+
+  let posts = 0
+  globalThis.fetch = async (url, options) => {
+    posts++
+    assert.equal(new URL(url).pathname, `/api/v3/system-manager/survey-orders/${orderId}/capture-appointments`)
+    assert.equal(options.method, 'POST')
+    assert.equal(options.headers.Authorization, 'Bearer manager')
+    assert.deepEqual(JSON.parse(options.body), original)
+    return Response.json({ surveyOrderId: orderId, appointmentId, purpose: 'CAPTURE', appointmentStatus: 'PROPOSED', scheduledDate: original.scheduledDate }, { status: 201 })
+  }
+  assert.equal((await api.proposeCaptureAppointment('manager', orderId, original)).appointmentStatus, 'PROPOSED')
+  assert.equal(posts, 1)
+})
+
+test('V3 capture proposal is unavailable when an appointment is active or the server reports deposit or readiness', () => {
+  const legacy = { ...v3AssignedOrder, status: 'AWAITING_BASELINE_APPOINTMENT' }
+  assert.equal(flow.isCaptureOrder(legacy), false)
+  for (const order of [legacy, { ...v3AssignedOrder, orderVersion: 0 },
+    { ...v3AssignedOrder, currentAppointmentVersion: 1 },
+    { ...v3AssignedOrder, currentAppointmentId: appointmentId, currentAppointmentVersion: 2, currentAppointmentStatus: 'PROPOSED', currentAppointmentPurpose: 'CAPTURE' },
+    { ...v3AssignedOrder, currentAppointmentId: appointmentId, currentAppointmentVersion: 2, currentAppointmentStatus: 'RESCHEDULE_REQUESTED', currentAppointmentPurpose: 'BASELINE_MAPPING' },
+    { ...v3AssignedOrder, status: 'AWAITING_DEPOSIT' }, { ...v3AssignedOrder, status: 'READY_FOR_CAPTURE' }]) {
+    assert.equal(flow.canProposeCaptureAppointment(order), false)
+  }
+  for (const date of ['2026-11-30', '2027-02-29', '2026-12-01', '01/12/2026']) {
+    assert.throws(() => flow.captureAppointmentBody(v3AssignedOrder, date, Date.parse('2026-12-01T16:56:00Z')))
+  }
+  assert.equal(flow.orderStatusLabel('AWAITING_DEPOSIT'), 'Chờ thanh toán cọc')
+  assert.equal(flow.orderStatusLabel('READY_FOR_CAPTURE'), 'Sẵn sàng khảo sát')
 })
 
 test('Owner appointment confirmation and reschedule use Owner routes and preserve both versions', async () => {

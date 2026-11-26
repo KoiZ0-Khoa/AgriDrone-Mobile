@@ -1,17 +1,47 @@
-import type { AppointmentBody, AssignedOrder, OrderScope } from './orderTypes'
+import type { AppointmentBody, AssignedOrder, CaptureAppointmentBody, OrderScope } from './orderTypes'
 import type { Polygon as GeoJsonPolygon } from '../api/types'
 import type { OrthophotoBody } from './orderTypes'
+import { validGuid } from './baseMapWorkflow'
+import { vietnamDateTime } from './schedule'
 
 export const orderStatusLabels: Record<string, string> = {
   AWAITING_BASELINE_DEPOSIT: 'Chờ thanh toán cọc bản đồ nền',
   PENDING_BOUNDARY_VERIFICATION: 'Chờ xác minh ranh giới', AWAITING_BASELINE_APPOINTMENT: 'Chờ lịch khảo sát bản đồ',
   AWAITING_BOUNDARY_CAPTURE: 'Chờ thu thập ranh giới', BASELINE_READY: 'Sẵn sàng bay bản đồ', BASELINE_IN_PROGRESS: 'Đang bay bản đồ', AWAITING_BASELINE_REVIEW: 'Chờ duyệt bản đồ',
   AWAITING_PRICING: 'Chờ xác nhận số trụ và giá', AWAITING_PAID_APPOINTMENT: 'Chờ lịch dịch vụ', AWAITING_PAYMENT: 'Chờ thanh toán', READY_FOR_PAID_SERVICE: 'Sẵn sàng dịch vụ', IN_PROGRESS: 'Đang thực hiện', PENDING_REVIEW: 'Chờ duyệt kết quả', COMPLETED: 'Hoàn tất', CANCELLED: 'Đã hủy',
-  AWAITING_APPOINTMENT: 'Chờ lịch khảo sát', AWAITING_DEPOSIT: 'Chờ thanh toán cọc', READY_FOR_CAPTURE: 'Sẵn sàng chụp ảnh', CAPTURING: 'Đang chụp ảnh', AWAITING_CAPTURE_UPLOAD: 'Chờ tải ảnh', AWAITING_INPUT_REVIEW: 'Chờ duyệt ảnh', AWAITING_PROCESSING: 'Chờ xử lý ảnh', PROCESSING: 'Đang xử lý ảnh', AWAITING_REFLIGHT_DECISION: 'Chờ quyết định bay lại', AWAITING_SETTLEMENT: 'Chờ thanh toán phần còn lại',
+  AWAITING_APPOINTMENT: 'Chờ lịch khảo sát', AWAITING_DEPOSIT: 'Chờ thanh toán cọc', READY_FOR_CAPTURE: 'Sẵn sàng khảo sát', CAPTURING: 'Đang chụp ảnh', AWAITING_CAPTURE_UPLOAD: 'Chờ tải ảnh', AWAITING_INPUT_REVIEW: 'Chờ duyệt ảnh', AWAITING_PROCESSING: 'Chờ xử lý ảnh', PROCESSING: 'Đang xử lý ảnh', AWAITING_REFLIGHT_DECISION: 'Chờ quyết định bay lại', AWAITING_SETTLEMENT: 'Chờ thanh toán phần còn lại',
 }
 export const orderStatusLabel = (status: string) => orderStatusLabels[status] ?? 'Đang cập nhật trạng thái'
 export const appointmentStatusLabels: Record<string, string> = { PROPOSED: 'Chờ xác nhận', CONFIRMED: 'Đã xác nhận', RESCHEDULE_REQUESTED: 'Chờ lịch mới', SUPERSEDED: 'Đã có lịch thay thế', CANCELLED: 'Đã hủy' }
 export const surveyServiceLabels: Record<string, string> = { PLANT_HEALTH: 'Sức khỏe cây', HARVEST_READINESS: 'Độ sẵn sàng thu hoạch' }
+const captureOrderStatuses = new Set([
+  'AWAITING_APPOINTMENT', 'AWAITING_DEPOSIT', 'READY_FOR_CAPTURE', 'CAPTURING', 'AWAITING_CAPTURE_UPLOAD',
+  'AWAITING_INPUT_REVIEW', 'AWAITING_PROCESSING', 'PROCESSING', 'AWAITING_REFLIGHT_DECISION', 'AWAITING_SETTLEMENT',
+])
+
+export function isCaptureOrder(order: AssignedOrder) {
+  return order.currentAppointmentPurpose === 'CAPTURE' || captureOrderStatuses.has(order.status)
+}
+
+function validVersion(value: number | null) {
+  return value !== null && Number.isInteger(value) && value > 0 && value <= 4_294_967_295
+}
+
+export function canProposeCaptureAppointment(order: AssignedOrder) {
+  if (order.status !== 'AWAITING_APPOINTMENT' || !validGuid(order.surveyOrderId) || !validVersion(order.orderVersion)) return false
+  if (order.currentAppointmentId === null) return order.currentAppointmentVersion === null && order.currentAppointmentStatus === null && order.currentAppointmentPurpose == null
+  return validGuid(order.currentAppointmentId) && validVersion(order.currentAppointmentVersion) &&
+    order.currentAppointmentPurpose === 'CAPTURE' && order.currentAppointmentStatus === 'RESCHEDULE_REQUESTED'
+}
+
+export function captureAppointmentBody(order: AssignedOrder, date: string, now = Date.now()): CaptureAppointmentBody {
+  if (!canProposeCaptureAppointment(order)) throw new Error('Đơn hoặc lịch đã thay đổi. Tải lại trước khi đề xuất lịch.')
+  const scheduledDate = date.trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) || scheduledDate.startsWith('0000-') || scheduledDate === '9999-12-31') throw new Error('Nhập ngày khảo sát theo định dạng YYYY-MM-DD.')
+  const dayEnd = Date.parse(vietnamDateTime(scheduledDate, '00:00')) + 24 * 60 * 60_000
+  if (dayEnd <= now + 5 * 60_000) throw new Error('Ngày khảo sát đã hết thời gian. Chọn ngày khác.')
+  return { scheduledDate, expectedOrderVersion: order.orderVersion, expectedCurrentAppointmentId: order.currentAppointmentId, expectedCurrentAppointmentVersion: order.currentAppointmentVersion }
+}
 export const baselineStageNotices: Record<string, { type: 'info' | 'warning'; title: string; description: string }> = {
   AWAITING_BASELINE_DEPOSIT: { type: 'info', title: 'Chờ Owner thanh toán cọc bản đồ nền', description: 'Sau khi khoản cọc được xác nhận, đơn chuyển sang bước chuẩn bị bay khảo sát bản đồ nền.' },
   BASELINE_READY: { type: 'info', title: 'Đơn đã chuyển sang bước chuẩn bị bay bản đồ nền', description: 'Kiểm tra lịch hẹn, điều kiện vận hành và phạm vi khảo sát dự kiến trước khi thực hiện chuyến bay. Ranh giới chính thức sẽ được xác lập từ ảnh trực giao sau chuyến bay.' },
