@@ -9,6 +9,14 @@ const dataUrl = (source) => `data:text/javascript;base64,${Buffer.from(source).t
 const clientUrl = dataUrl(compile('../src/api/client.ts').replace("import Constants from 'expo-constants';", "const Constants = {}; const __DEV__ = true;").replace("import { Platform } from 'react-native';", "const Platform = { OS: 'android' };").replace('process.env.EXPO_PUBLIC_API_URL', "'http://test.local'"))
 const client = await import(clientUrl)
 
+test('user-facing order errors hide IDs and preserve actionable messages', () => {
+  const id = '019b38ae-90b6-7db7-b288-9b8cd87cbcc4'
+  const detailed = new client.ApiError(400, `Survey order ${id} is invalid.`, 'Survey.InvalidOrder', 'request-123')
+  assert.equal(client.errorMessage(detailed), 'Không thể xử lý yêu cầu. Vui lòng thử lại.')
+  assert.equal(detailed.traceId, 'request-123')
+  assert.equal(client.errorMessage(new client.ApiError(400, 'Chọn lại thời gian khảo sát.')), 'Chọn lại thời gian khảo sát.')
+})
+
 test('API follows the Expo LAN host after moving networks, using the backend port', () => {
   assert.equal(client.resolveApiUrl('', '192.168.137.1:8081', 'android', true), 'http://192.168.137.1:5080')
   assert.equal(client.resolveApiUrl(undefined, '10.87.22.112:8082', 'ios', true), 'http://10.87.22.112:5080')

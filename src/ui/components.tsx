@@ -2,7 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons'
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewProps, type TextInputProps } from 'react-native'
 import { useState, type ComponentProps, type PropsWithChildren } from 'react'
 import { colors, fonts, ui } from './theme'
-import { ApiError, errorMessage } from '../api/client'
+import { errorMessage } from '../api/client'
 import { Image } from 'expo-image'
 export type IconName = ComponentProps<typeof Ionicons>['name']
 export function Icon({ name, color = colors.mint, size = 22 }: { name: IconName; color?: string; size?: number }) { return <Ionicons name={name} color={color} size={size} /> }
@@ -29,9 +29,9 @@ export function Field({ label, secureTextEntry, ...props }: TextInputProps & { l
 export function Notice({ title, description, error = false }: { title: string; description?: string; error?: boolean }) {
   return <View accessibilityLiveRegion="polite" style={[styles.notice, error && styles.noticeError]}><Icon name={error ? 'alert-circle-outline' : 'information-circle-outline'} color={error ? colors.danger : colors.mint} /><View style={ui.grow}><Text style={[styles.noticeTitle, error && styles.errorText]}>{title}</Text>{description ? <Text style={ui.muted}>{description}</Text> : null}</View></View>
 }
-export function ErrorNotice({ error }: { error: unknown }) { return error ? <Notice error title={errorMessage(error)} description={error instanceof ApiError ? [error.message !== errorMessage(error) ? error.message : null, error.code ? `Mã lỗi: ${error.code}` : null, error.traceId ? `Mã tra cứu: ${error.traceId}` : null].filter(Boolean).join('\n') : undefined} /> : null }
-export function Empty({ title, description, icon = 'leaf-outline' }: { title: string; description: string; icon?: IconName }) {
-  return <View style={styles.empty}><View style={styles.emptyIcon}><Icon name={icon} size={30} /></View><Text style={[ui.heading, styles.center]}>{title}</Text><Text style={[ui.muted, styles.center]}>{description}</Text></View>
+export function ErrorNotice({ error }: { error: unknown }) { return error ? <Notice error title={errorMessage(error)} /> : null }
+export function Empty({ title, description, icon = 'leaf-outline' }: { title: string; description?: string; icon?: IconName }) {
+  return <View style={styles.empty}><View style={styles.emptyIcon}><Icon name={icon} size={30} /></View><Text style={[ui.heading, styles.center]}>{title}</Text>{description ? <Text style={[ui.muted, styles.center]}>{description}</Text> : null}</View>
 }
 export function Loading() { return <View style={styles.empty}><ActivityIndicator color={colors.mint} /><Text style={ui.muted}>Đang tải dữ liệu…</Text></View> }
 export function DataError({ error, retry }: { error: unknown; retry: () => void }) { return <View style={ui.stack}><ErrorNotice error={error} /><Button title="Thử lại" secondary onPress={retry} /></View> }

@@ -32,14 +32,13 @@ export default function HomeScreen() {
       <View style={styles.mapHero}>
         <FarmMap farms={located} interactive={false} />
         <LinearGradient pointerEvents="none" colors={[colors.white, '#ffffff00']} style={styles.mapFade} />
-        {permitted && query.isSuccess && located.length === 0 ? <View style={styles.mapMessage}><Icon name="location-outline" /><Text style={styles.mapMessageText}>{farms.length ? 'Nông trại chưa có vị trí trên bản đồ' : 'Bản đồ sẵn sàng cho nông trại đầu tiên'}</Text></View> : null}
+        {permitted && query.isSuccess && located.length === 0 ? <View style={styles.mapMessage}><Icon name="location-outline" /><Text style={styles.mapMessageText}>{farms.length ? 'Chưa có vị trí nông trại' : 'Chưa có nông trại'}</Text></View> : null}
         {permitted ? <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/farms', params: { view: 'map' } })} style={({ pressed }) => [styles.viewAll, pressed && ui.pressed]}><Text style={styles.viewAllText}>Xem bản đồ</Text><Icon name="chevron-forward" color={colors.ink} size={18} /></Pressable> : null}
       </View>
       <View style={styles.body}>
         {query.isError ? <DataError error={query.error} retry={() => { void query.refetch() }} /> : null}
-        {permitted ? <View style={styles.summary}><View style={ui.grow}><Text style={styles.number}>{total ?? '—'}</Text><Text style={ui.muted}>Nông trại trong đơn vị</Text></View><View style={styles.summaryDivider} /><View style={ui.grow}><Text style={styles.number}>{query.isSuccess ? located.length : '—'}</Text><Text style={ui.muted}>Vị trí trong {farms.length} mục đã tải</Text></View></View> : null}
-        {session.role === 'OWNER' ? <><SectionHeading title="Hôm nay" action="Công việc" onPress={() => router.push('/work')} /><Pressable accessibilityRole="button" onPress={() => router.push('/work')} style={({ pressed }) => [styles.today, pressed && ui.pressed]}><View style={ui.spread}><Icon name="calendar-outline" color={colors.muted} size={28} /><Icon name="arrow-forward" color={colors.ink} /></View><Text style={ui.heading}>Lịch khảo sát của bạn</Text><Text style={ui.muted}>Xem lịch hẹn và thanh toán trong Công việc.</Text></Pressable></> : null}
-        <SectionHeading title="Nông trại của bạn" action={permitted ? 'Xem tất cả' : undefined} onPress={() => router.push('/farms')} />
+        {session.role === 'OWNER' ? <Pressable accessibilityRole="button" onPress={() => router.push('/work')} style={({ pressed }) => [styles.orderShortcut, ui.row, pressed && ui.pressed]}><View style={ui.iconBox}><Icon name="calendar-outline" color={colors.ink} /></View><Text style={[ui.heading, ui.grow]}>Đơn khảo sát</Text><Icon name="chevron-forward" color={colors.muted} size={18} /></Pressable> : null}
+        <SectionHeading title={permitted && total ? `Nông trại (${total})` : 'Nông trại'} action={permitted ? 'Xem tất cả' : undefined} onPress={() => router.push('/farms')} />
         {permitted ? query.isPending ? <Loading /> : farms.length ? <View>{farms.slice(0, 3).map(farm => <FarmRow key={farm.id} farm={farm} />)}</View> : query.isSuccess ? <Empty title="Bắt đầu với nông trại đầu tiên" description="Chủ đơn vị đăng ký khảo sát để tạo nông trại mới." /> : null : null}
       </View>
     </ScrollView>
@@ -52,6 +51,6 @@ const styles = StyleSheet.create({
   mapHero: { height: 340, marginTop: 12, backgroundColor: colors.water, overflow: 'hidden' }, mapFade: { position: 'absolute', top: 0, left: 0, right: 0, height: 65 },
   mapMessage: { position: 'absolute', top: 85, alignSelf: 'center', maxWidth: '85%', borderRadius: 12, padding: 16, gap: 10, flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffffed' }, mapMessageText: { ...ui.text, flexShrink: 1, fontSize: 14 },
   viewAll: { position: 'absolute', right: 20, bottom: 30, backgroundColor: colors.white, borderRadius: 28, minHeight: 48, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 8, boxShadow: '0 4px 12px rgba(7,54,66,0.15)' }, viewAllText: { fontFamily: fonts.bold, color: colors.ink, fontSize: 16 },
-  body: { padding: 20, gap: 18 }, summary: { flexDirection: 'row', alignItems: 'center', gap: 20, paddingVertical: 10, marginBottom: 4 }, summaryDivider: { width: 1, height: 44, backgroundColor: colors.border }, number: { ...ui.heading, fontSize: 30, lineHeight: 38 },
-  today: { backgroundColor: colors.mist, borderRadius: 16, padding: 22, gap: 12, marginBottom: 10 },
+  body: { padding: 20, gap: 18 },
+  orderShortcut: { backgroundColor: colors.paper, borderRadius: 14, borderWidth: 1, borderColor: colors.border, padding: 12 },
 })

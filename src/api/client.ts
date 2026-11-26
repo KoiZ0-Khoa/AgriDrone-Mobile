@@ -72,6 +72,8 @@ export function errorMessage(error: unknown) {
     if (error.code === 'FarmMembership.TargetTenantMembershipInactive') return 'Quản trị viên này đã ngừng hoạt động. Vui lòng chọn người khác.'
     if (error.code === 'FarmMembership.TargetMustBeTenantAdmin') return 'Người được chọn phải là quản trị viên đơn vị đang hoạt động.'
     if (error.status === 409) return 'Dữ liệu bị trùng hoặc đã thay đổi. Vui lòng tải lại trước khi thử tiếp.'
+    const containsId = /\b(?:[\da-f]{32}|[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12})\b/i.test(error.message)
+    if (containsId || (error.traceId && error.message.includes(error.traceId))) return 'Không thể xử lý yêu cầu. Vui lòng thử lại.'
   }
   return error instanceof Error ? error.message : 'Có lỗi xảy ra. Vui lòng thử lại.'
 }

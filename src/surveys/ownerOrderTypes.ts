@@ -3,6 +3,7 @@ export type OwnerAppointment = {
 }
 export type OwnerSurveyOrder = {
   surveyOrderId: string; orderNumber: string; farmId: string; farmName: string; status: string; orderVersion: number
+  serviceType?: string
   depositAmount: number; totalAmount: number | null; remainingAmount: number | null; currency: string; currentAppointment: OwnerAppointment | null
 }
 export type OwnerAppointmentBody = { expectedOrderVersion: number; expectedAppointmentVersion: number }

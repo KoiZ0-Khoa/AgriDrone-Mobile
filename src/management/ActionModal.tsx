@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Modal, Text } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ApiError } from '../api/client'
+import { ApiError, errorMessage } from '../api/client'
 import { Button, Field, Heading, Notice, Screen } from '../ui/components'
 import { ui } from '../ui/theme'
 import { validate, type Action, type Values } from './actions'
@@ -24,7 +24,7 @@ export function ActionModal({ action, close, success }: { action: Action; close:
     <Heading title={action.title} />
     {action.description ? <Text style={ui.muted}>{action.description}</Text> : null}
     {action.fields.map(f => <Field key={f.key} label={f.label} value={values[f.key]} maxLength={f.max} multiline={f.kind === 'multiline'} secureTextEntry={f.kind === 'password'} keyboardType={f.kind === 'number' ? 'numbers-and-punctuation' : f.kind === 'email' ? 'email-address' : 'default'} autoCapitalize={f.kind === 'email' || f.kind === 'password' ? 'none' : 'sentences'} editable={!mutation.isPending} onChangeText={value => setValues(v => ({ ...v, [f.key]: value }))} />)}
-    {mutation.error ? <Notice error title={conflict ? 'Chưa thể xác nhận. Đóng biểu mẫu và tải lại để kiểm tra điều kiện.' : forbidden ? 'Bạn không có quyền hoặc dữ liệu không còn trong phạm vi truy cập.' : mutation.error.message} description={mutation.error instanceof ApiError ? [mutation.error.message, mutation.error.code ? `Mã lỗi: ${mutation.error.code}` : null, mutation.error.traceId ? `Mã tra cứu: ${mutation.error.traceId}` : null].filter(Boolean).join('\n') : undefined} /> : null}
+    {mutation.error ? <Notice error title={conflict ? 'Dữ liệu đã thay đổi. Tải lại để tiếp tục.' : forbidden ? 'Bạn chưa có quyền thực hiện thao tác này.' : errorMessage(mutation.error)} /> : null}
     <Button title="Xác nhận" loading={mutation.isPending} disabled={Boolean(conflict || forbidden)} onPress={() => { if (sending.current) return; sending.current = true; mutation.mutate() }} />
     <Button secondary title={conflict ? 'Đóng và tải lại' : 'Hủy'} disabled={mutation.isPending} onPress={dismiss} />
   </Screen></SafeAreaView></Modal>
