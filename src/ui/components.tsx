@@ -7,7 +7,9 @@ import { Image } from 'expo-image'
 export type IconName = ComponentProps<typeof Ionicons>['name']
 export function Icon({ name, color = colors.mint, size = 22 }: { name: IconName; color?: string; size?: number }) { return <Ionicons name={name} color={color} size={size} /> }
 export function Screen({ children, ...props }: PropsWithChildren<ScrollViewProps>) {
-  return <KeyboardAvoidingView style={ui.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}><ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={ui.fill} contentContainerStyle={ui.page} {...props}>{children}</ScrollView></KeyboardAvoidingView>
+  return <KeyboardAvoidingView style={ui.fill} behavior={Platform.OS === 'web' ? undefined : 'padding'}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" style={ui.fill} contentContainerStyle={ui.page} {...props}>{children}</ScrollView>
+  </KeyboardAvoidingView>
 }
 export function Brand() {
   return <View style={ui.row} accessible accessibilityLabel="AgriDrone, vận hành nông trại"><Image source={require('../../assets/brand/emblem.png')} style={styles.brandEmblem} contentFit="contain" accessible={false} /><View style={styles.brandCopy}><Text style={styles.brand}><Text style={styles.brandAgri}>Agri</Text>Drone</Text><Text style={styles.brandSub}>VẬN HÀNH NÔNG TRẠI</Text></View></View>
